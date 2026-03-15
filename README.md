@@ -56,7 +56,7 @@ BorderSync is built with a focus on three core principles:
 ### 🔐 Officer Sign In
 The login page features a clean two-column layout. The left panel displays the BorderSync brand, system description, and feature highlights. The right panel contains the secure sign-in form. Sessions are encrypted using JWT tokens with an 8-hour expiry.
 
-![Login Page](https://raw.githubusercontent.com/placeholder/bordersync/main/screenshots/login.png)
+![Login Page](https://github.com/harshithKumar12/BorderSync/blob/main/screenshots/login.png)
 > *Secure officer authentication with role-based access. Authorized personnel only.*
 
 ---
@@ -64,7 +64,7 @@ The login page features a clean two-column layout. The left panel displays the B
 ### 📊 Dashboard
 The main dashboard gives administrators and border officers a real-time snapshot of checkpoint activity. Six stat cards display today's entries, pending verifications, approvals, flagged travelers, rejections, and open cases. The Recent Entries table shows the latest traveler registrations with clickable rows linking to full profiles.
 
-![Dashboard](https://raw.githubusercontent.com/placeholder/bordersync/main/screenshots/dashboard.png)
+![Dashboard](https://github.com/harshithKumar12/BorderSync/blob/main/screenshots/DashBoard.png)
 > *Real-time statistics with today's entries, status breakdowns, and recent traveler activity.*
 
 ---
@@ -72,7 +72,7 @@ The main dashboard gives administrators and border officers a real-time snapshot
 ### 👤 Biometric Scan — Face Recognition
 The Biometric Scan module contains two tabs. The Fingerprint tab simulates a 5-step scan protocol with animated scanner UI. The Face Recognition tab uses face-api.js running entirely in the browser to perform real facial detection and matching against registered traveler reference photos stored in MongoDB.
 
-![Biometric Scan](https://raw.githubusercontent.com/placeholder/bordersync/main/screenshots/biometric.png)
+![Biometric Scan](https://github.com/harshithKumar12/BorderSync/blob/main/screenshots/%20Biometric%20Scan%20page%20with%20(face%20recognition).png)
 > *Face Recognition tab powered by face-api.js — no server-side ML required.*
 
 ---
@@ -80,7 +80,7 @@ The Biometric Scan module contains two tabs. The Fingerprint tab simulates a 5-s
 ### 🛡️ Admin Panel
 The Admin Panel is restricted to administrators only. It provides a form to register new officers with role assignment (Admin, Border Officer, NGO Coordinator) and lists all registered officers with the ability to activate or deactivate accounts in one click.
 
-![Admin Panel](https://raw.githubusercontent.com/placeholder/bordersync/main/screenshots/admin.png)
+![Admin Panel](https://github.com/harshithKumar12/BorderSync/blob/main/screenshots/Admin%20Panel.png)
 > *Officer management — register new accounts and control access in real time.*
 
 ---
