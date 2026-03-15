@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BorderSync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:#0C0A18; --surface:#141222; --card:#1A1830; --border:#252340; --borderlt:#332F58;
+    --accent:#6C5CE7; --accenthi:#8B7AFF; --accentdim:#3D3580;
+    --muted:#5C5880; --mutedlt:#8C88B8; --text:#E2E0F4; --textdim:#A8A4CC;
+    --green:#10B981; --greenbg:rgba(16,185,129,.12); --greenbdr:rgba(16,185,129,.25);
+    --amber:#F59E0B; --amberbg:rgba(245,158,11,.12);  --amberbdr:rgba(245,158,11,.25);
+    --red:#EF4444;   --redbg:rgba(239,68,68,.12);     --redbdr:rgba(239,68,68,.25);
+    --sky:#38BDF8;   --skybg:rgba(56,189,248,.12);    --skybdr:rgba(56,189,248,.25);
+    --violet:#A78BFA;--violetbg:rgba(167,139,250,.12);--violetbdr:rgba(167,139,250,.25);
+    --slate:#94A3B8; --slatebg:rgba(148,163,184,.12); --slatebdr:rgba(148,163,184,.25);
+  }
+  html{color-scheme:dark}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+  #app{display:flex;min-height:100vh}
+  #sidebar{width:232px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;background-image:linear-gradient(180deg,rgba(108,92,231,.08) 0%,transparent 35%)}
+  #main-wrap{margin-left:232px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+  #topbar{height:56px;background:rgba(20,18,34,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:40}
+  #page{flex:1;padding:24px}
+  .hidden{display:none!important}
+  .sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .logo-icon{width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(108,92,231,.4);flex-shrink:0}
+  .logo-name{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+  .logo-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:1px}
+  .nav-section{padding:16px 12px 0}
+  .nav-label{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;padding:0 12px;margin-bottom:6px}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:13.5px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;margin-bottom:2px;user-select:none}
+  .nav-item:hover{color:var(--text);background:rgba(255,255,255,.05)}
+  .nav-item.active{color:var(--text);background:rgba(108,92,231,.18);box-shadow:inset 0 0 0 1px rgba(108,92,231,.35)}
+  .nav-item.active .nav-icon{color:var(--accenthi)}
+  .nav-icon{width:16px;height:16px;flex-shrink:0;transition:color .15s}
+  .sidebar-user{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
+  .user-card{background:rgba(12,10,24,.6);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .user-avatar{width:30px;height:30px;border-radius:8px;background:var(--accentdim);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--accenthi);flex-shrink:0}
+  .user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role-txt{font-size:10px;color:var(--muted);margin-top:1px}
+  .btn-logout{width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px;border-radius:8px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit}
+  .btn-logout:hover{color:var(--red);background:var(--redbg)}
+  .topbar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:var(--text)}
+  .topbar-right{display:flex;align-items:center;gap:10px}
+  .topbar-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 8px;border-radius:20px;font-weight:500}
+  .topbar-user{font-size:13px;color:var(--textdim);font-weight:500}
+  .topbar-badge-num{font-family:'IBM Plex Mono',monospace;font-size:10px;background:rgba(12,10,24,.8);border:1px solid var(--border);color:var(--muted);padding:2px 7px;border-radius:6px}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:'Syne',sans-serif}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primary{background:var(--accent);color:#fff;box-shadow:0 0 18px rgba(108,92,231,.35)}
+  .btn-primary:hover:not(:disabled){background:var(--accenthi)}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--borderlt)}
+  .btn-danger{background:var(--redbg);color:var(--red);border:1px solid var(--redbdr)}
+  .btn-danger:hover:not(:disabled){background:rgba(239,68,68,.2)}
+  .btn-sm{padding:5px 12px;font-size:12px;border-radius:8px}
+  .btn-xs{padding:4px 9px;font-size:11px;border-radius:7px}
+  .field{margin-bottom:16px}.field-row{display:grid;gap:16px;margin-bottom:16px}
+  .field-row.col2{grid-template-columns:1fr 1fr}.field-row.col3{grid-template-columns:1fr 1fr 1fr}
+  label.lbl{display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+  input,select,textarea{width:100%;padding:9px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;transition:border-color .15s,box-shadow .15s;outline:none}
+  input::placeholder,textarea::placeholder{color:var(--muted);opacity:.6}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,92,231,.15)}
+  select option{background:var(--card)}textarea{resize:vertical}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+  .card-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .card-header h2{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text)}
+  .card-header p{font-size:11px;color:var(--muted);margin-top:2px}
+  .card-body{padding:22px}
+  .stat-grid{display:grid;gap:14px;margin-bottom:24px}
+  .stat-grid.cols6{grid-template-columns:repeat(6,1fr)}.stat-grid.cols2{grid-template-columns:repeat(2,1fr)}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+  .stat-glow{position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:.18;filter:blur(20px)}
+  .stat-lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:8px}
+  .stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:32px;color:var(--text);line-height:1}
+  .stat-icon{position:absolute;top:16px;right:16px;font-size:20px;opacity:.35}
+  .tbl-wrap{border:1px solid var(--border);border-radius:14px;overflow:hidden}.tbl-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse}
+  thead tr{border-bottom:1px solid var(--border);background:rgba(20,18,34,.8)}
+  th{padding:10px 16px;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);white-space:nowrap;font-weight:500}
+  tbody tr{border-bottom:1px solid rgba(37,35,64,.5);transition:background .12s}
+  tbody tr:last-child{border-bottom:none}
+  tbody tr.clickable{cursor:pointer}tbody tr.clickable:hover{background:rgba(255,255,255,.03)}
+  td{padding:11px 16px;font-size:13px;vertical-align:middle}
+  .td-primary{font-weight:600;color:var(--text)}.td-mono{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted)}.td-dim{color:var(--textdim)}
+  .empty-state{padding:48px 24px;text-align:center}.empty-icon{font-size:32px;opacity:.15;margin-bottom:10px}.empty-txt{font-size:13px;color:var(--muted)}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;text-transform:capitalize;white-space:nowrap}
+  .badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+  .badge-approved,.badge-resolved{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbdr)}
+  .badge-approved .badge-dot,.badge-resolved .badge-dot{background:var(--green)}
+  .badge-pending,.badge-medium{background:var(--amberbg);color:var(--amber);border:1px solid var(--amberbdr)}
+  .badge-pending .badge-dot,.badge-medium .badge-dot{background:var(--amber)}
+  .badge-flagged,.badge-high,.badge-escalated{background:var(--redbg);color:var(--red);border:1px solid var(--redbdr)}
+  .badge-flagged .badge-dot,.badge-high .badge-dot,.badge-escalated .badge-dot{background:var(--red)}
+  .badge-rejected,.badge-low{background:var(--slatebg);color:var(--slate);border:1px solid var(--slatebdr)}
+  .badge-open{background:var(--skybg);color:var(--sky);border:1px solid var(--skybdr)}.badge-open .badge-dot{background:var(--sky)}
+  .badge-in_progress{background:var(--violetbg);color:var(--violet);border:1px solid var(--violetbdr)}.badge-in_progress .badge-dot{background:var(--violet)}
+  .badge-admin{background:rgba(167,139,250,.12);color:var(--violet);border:1px solid rgba(167,139,250,.25)}
+  .badge-border_officer{background:var(--skybg);color:var(--sky);border:1px solid var(--skybdr)}
+  .badge-ngo_coordinator{background:rgba(52,211,153,.1);color:#34d399;border:1px solid rgba(52,211,153,.25)}
+  .pagination{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+  .pg-info{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-right:8px}
+  .pg-btn{width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;transition:all .12s;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+  .pg-btn:hover:not(:disabled){color:var(--text);background:var(--surface)}.pg-btn.active{background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(108,92,231,.4)}.pg-btn:disabled{opacity:.3;cursor:not-allowed}
+  .filter-bar{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+  .filter-field{flex:1;min-width:130px}.filter-field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+  .filter-field input,.filter-field select{padding:8px 12px;font-size:12.5px}
+  #toast-root{position:fixed;top:16px;right:16px;z-index:1000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .toast{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:12px;border:1px solid;backdrop-filter:blur(16px);min-width:260px;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .25s ease;pointer-events:auto}
+  .toast-icon{width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+  .toast-msg{font-size:13px;color:rgba(255,255,255,.9)}
+  .toast.success{background:var(--greenbg);border-color:var(--greenbdr);color:var(--green)}
+  .toast.error{background:var(--redbg);border-color:var(--redbdr);color:var(--red)}
+  .toast.info{background:var(--skybg);border-color:var(--skybdr);color:var(--sky)}
+  @keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .fade-up{animation:fadeUp .25s ease}
+  #login-page{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;overflow:hidden}
+  .login-left{background:var(--surface);display:flex;flex-direction:column;padding:52px;position:relative;overflow:hidden;border-right:1px solid var(--border)}
+  .login-left-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
+  .login-left-glow{position:absolute;bottom:-100px;left:-60px;width:420px;height:420px;background:rgba(108,92,231,.1);border-radius:50%;filter:blur(90px);pointer-events:none}
+  .login-brand{position:relative;z-index:2}
+  .login-brand-icon{width:50px;height:50px;border-radius:14px;background:var(--accent);display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(108,92,231,.5);margin-bottom:22px}
+  .login-brand-name{font-family:'Syne',sans-serif;font-weight:800;font-size:30px;color:var(--text);margin-bottom:8px}
+  .login-brand-sub{font-size:13px;color:var(--muted);line-height:1.6;max-width:320px}
+  .login-features{position:relative;z-index:2;margin-top:64px}
+  .login-feature{display:flex;align-items:flex-start;gap:14px;margin-bottom:28px}
+  .login-feature-icon{width:38px;height:38px;border-radius:10px;background:rgba(108,92,231,.12);border:1px solid rgba(108,92,231,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .login-feature-title{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--text);margin-bottom:3px}
+  .login-feature-desc{font-size:12px;color:var(--muted);line-height:1.5}
+  .login-left-footer{position:relative;z-index:2;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:auto;padding-top:32px;border-top:1px solid var(--border)}
+  .login-right{display:flex;align-items:center;justify-content:center;padding:52px;background:var(--bg);position:relative}
+  .login-right-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;background:rgba(108,92,231,.04);border-radius:50%;filter:blur(80px);pointer-events:none}
+  .login-card{width:100%;max-width:400px;position:relative;z-index:2}
+  .login-inner{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .login-h{font-family:'Syne',sans-serif;font-weight:700;font-size:22px;color:var(--text);margin-bottom:6px}
+  .login-hint{font-size:12.5px;color:var(--muted);margin-bottom:28px;line-height:1.5}
+  .demo-creds{display:none}.demo-label{display:none}.demo-btn{display:none}
+  .login-logo{display:none}.login-glow1{display:none}.login-glow2{display:none}.login-grid{display:none}
+  @media(max-width:768px){#login-page{grid-template-columns:1fr}.login-left{display:none}.login-right{padding:24px}}
+  .face-drop{border:2px dashed var(--border);border-radius:14px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:rgba(12,10,24,.4)}
+  .face-drop:hover,.face-drop.dragover{border-color:rgba(108,92,231,.5);background:rgba(108,92,231,.05)}
+  .face-drop.has-img{border-style:solid;border-color:rgba(108,92,231,.4)}
+  .face-canvas-wrap{position:relative;display:inline-block;border-radius:10px;overflow:hidden}
+  .face-canvas-wrap canvas.overlay{position:absolute;top:0;left:0;pointer-events:none}
+  .face-bar{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:6px}
+  .face-bar-fill{height:100%;border-radius:3px;transition:width .8s ease,background .5s}
+  .face-confidence{font-family:'Syne',sans-serif;font-weight:800;font-size:36px;margin-bottom:4px}
+  .face-match-card{border-radius:14px;padding:20px;border:1px solid;margin-top:16px}
+  .face-match-card.match{border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.06)}
+  .face-match-card.nomatch{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.06)}
+  .face-match-card.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.06)}
+  .bio-scanner{width:200px;height:200px;border-radius:50%;border:2px solid var(--borderlt);position:relative;display:flex;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;transition:all .3s;background:radial-gradient(circle,rgba(108,92,231,.05),transparent)}
+  .bio-scanner:hover{border-color:var(--accent);box-shadow:0 0 30px rgba(108,92,231,.15)}
+  .bio-scanner.scanning{border-color:var(--accent);box-shadow:0 0 40px rgba(108,92,231,.3);animation:bioPulse 1.5s ease-in-out infinite}
+  .bio-scanner.success{border-color:var(--green);box-shadow:0 0 40px rgba(16,185,129,.3)}
+  .bio-scanner.fail{border-color:var(--red);box-shadow:0 0 40px rgba(239,68,68,.3)}
+  .bio-ring{position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(108,92,231,.2);animation:bioRing 3s linear infinite}
+  .bio-ring2{position:absolute;inset:-16px;border-radius:50%;border:1px dashed rgba(108,92,231,.1);animation:bioRing 5s linear infinite reverse}
+  .bio-icon{position:relative;z-index:2;transition:all .3s}
+  .bio-scan-line{position:absolute;left:10%;right:10%;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);border-radius:2px;animation:bioScanLine 1.5s ease-in-out infinite;opacity:0;top:50%}
+  .bio-scanner.scanning .bio-scan-line{opacity:1}
+  @keyframes bioPulse{0%,100%{box-shadow:0 0 20px rgba(108,92,231,.2)}50%{box-shadow:0 0 50px rgba(108,92,231,.5)}}
+  @keyframes bioRing{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes bioScanLine{0%{top:15%;opacity:0}10%{opacity:1}90%{opacity:1}100%{top:85%;opacity:0}}
+  .bio-step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:8px;transition:all .2s}
+  .bio-step.active{border-color:rgba(108,92,231,.4);background:rgba(108,92,231,.06)}
+  .bio-step.done{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+  .bio-step.fail{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.05)}
+  .bio-step-num{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--borderlt);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;margin-top:1px}
+  .bio-step.active .bio-step-num{border-color:var(--accent);color:var(--accenthi);background:rgba(108,92,231,.15)}
+  .bio-step.done .bio-step-num{border-color:var(--green);background:rgba(16,185,129,.15);color:var(--green)}
+  .bio-step.fail .bio-step-num{border-color:var(--red);background:rgba(239,68,68,.1);color:var(--red)}
+  .bio-result-card{border-radius:14px;padding:20px;border:1px solid var(--border);background:rgba(12,10,24,.5);margin-top:16px}
+  .bio-result-card.match{border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.06)}
+  .bio-result-card.nomatch{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.06)}
+  .alert-error{background:var(--redbg);border:1px solid var(--redbdr);border-radius:10px;padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:14px}
+  .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 24px;padding:22px}
+  .detail-grid.col2{grid-template-columns:repeat(2,1fr)}
+  .df-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
+  .df-value{font-size:13.5px;font-weight:500;color:var(--text)}
+  .timeline{padding:20px 22px}
+  .timeline-item{display:flex;gap:14px}
+  .timeline-line{display:flex;flex-direction:column;align-items:center}
+  .timeline-avatar{width:32px;height:32px;border-radius:9px;background:rgba(108,92,231,.2);border:1px solid rgba(108,92,231,.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:var(--accenthi);flex-shrink:0}
+  .timeline-connector{width:1px;flex:1;background:var(--border);margin:4px 0}
+  .timeline-content{flex:1;padding-bottom:18px}
+  .timeline-meta{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+  .timeline-author{font-size:12px;font-weight:600;color:var(--text)}.timeline-time{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)}
+  .timeline-note{font-size:13px;color:var(--textdim);background:rgba(12,10,24,.5);border:1px solid rgba(37,35,64,.6);border-radius:10px;padding:10px 14px;line-height:1.55;white-space:pre-wrap}
+  .spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .page-loader{display:flex;align-items:center;justify-content:center;height:220px}
+  .profile-head{display:flex;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid var(--border)}
+  .profile-avatar{width:46px;height:46px;border-radius:13px;background:rgba(61,53,128,.5);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:var(--accenthi);flex-shrink:0}
+  .profile-name{font-family:'Syne',sans-serif;font-weight:700;font-size:17px;color:var(--text)}
+  .profile-sub{display:flex;align-items:center;gap:8px;margin-top:4px}
+  .upload-zone{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .15s;background:rgba(12,10,24,.4)}
+  .upload-zone:hover{border-color:rgba(108,92,231,.5);background:rgba(108,92,231,.04)}
+  .upload-zone.has-file{border-style:solid;border-color:rgba(108,92,231,.4);background:rgba(108,92,231,.06)}
+  .upload-icon{font-size:28px;opacity:.3;margin-bottom:8px}.upload-txt{font-size:12px;color:var(--muted)}
+  .needs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .need-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:rgba(12,10,24,.5);border:1px solid var(--border);cursor:pointer;transition:all .15s;user-select:none}
+  .need-item:hover{border-color:rgba(108,92,231,.35);background:rgba(108,92,231,.05)}
+  .need-item.checked{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.07)}
+  .need-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--borderlt);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;background:transparent}
+  .need-item.checked .need-check{background:var(--green);border-color:var(--green)}
+  .need-label{font-size:13px;font-weight:500;color:var(--textdim);transition:color .15s}
+  .need-item.checked .need-label{color:var(--text)}
+  .needs-updated{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px}
+  .upload-preview{max-height:160px;border-radius:8px;object-fit:contain;margin-bottom:8px}
+  @media(max-width:1100px){.stat-grid.cols6{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){.stat-grid.cols6{grid-template-columns:repeat(2,1fr)}.detail-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="toast-root"></div>
+
+<div id="login-page" class="hidden">
+  <!-- Left panel -->
+  <div class="login-left">
+    <div class="login-left-bg"></div>
+    <div class="login-left-glow"></div>
+    <div class="login-brand fade-up">
+      <div class="login-brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      </div>
+      <div class="login-brand-name">BorderSync</div>
+      <div class="login-brand-sub">A unified digital platform for secure, efficient border checkpoint management and traveler processing.</div>
+    </div>
+    <div class="login-features fade-up">
+      <div class="login-feature">
+        <div class="login-feature-icon">
+          <svg viewBox="0 0 20 20" fill="var(--accenthi)" width="18" height="18"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+        </div>
+        <div>
+          <div class="login-feature-title">Traveler Management</div>
+          <div class="login-feature-desc">Register, track and process travelers with full document verification and status tracking.</div>
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="login-feature-icon">
+          <svg viewBox="0 0 20 20" fill="var(--accenthi)" width="18" height="18"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+        </div>
+        <div>
+          <div class="login-feature-title">Case Management</div>
+          <div class="login-feature-desc">Open, assign and resolve cases for flagged travelers, asylum seekers and refugees.</div>
+        </div>
+      </div>
+      <div class="login-feature">
+        <div class="login-feature-icon">
+          <svg viewBox="0 0 20 20" fill="var(--accenthi)" width="18" height="18"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        </div>
+        <div>
+          <div class="login-feature-title">Role-Based Access</div>
+          <div class="login-feature-desc">Separate access levels for admins, border officers and NGO coordinators.</div>
+        </div>
+      </div>
+    </div>
+    <div class="login-left-footer">BorderSync BMS · v1.0 · Secure Access Only</div>
+  </div>
+  <!-- Right panel -->
+  <div class="login-right">
+    <div class="login-right-glow"></div>
+    <div class="login-card fade-up">
+      <div class="login-inner">
+        <div class="login-h">Officer Sign In</div>
+        <div class="login-hint">Enter your credentials to access the border management system. Unauthorized access is prohibited.</div>
+        <div id="login-error" class="alert-error hidden"></div>
+        <div class="field"><label class="lbl">Email Address</label><input type="email" id="login-email" placeholder="officer@bordersync.io" autocomplete="email" /></div>
+        <div class="field"><label class="lbl">Password</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" /></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;padding:12px" id="login-btn" onclick="doLogin()">Sign In</button>
+        <div style="text-align:center;margin-top:20px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted)">Protected system · All activity is logged</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/><path d="M9 12l2 2 4-4" stroke-width="2.5"/></svg></div>
+      <div><div class="logo-name">BorderSync</div><div class="logo-sub">v1.0 · BMS</div></div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Navigation</div>
+      <div class="nav-item" id="nav-dashboard" onclick="go('dashboard')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item nav-write" id="nav-new-entry" onclick="go('new-entry')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+        New Entry
+      </div>
+      <div class="nav-item" id="nav-travelers" onclick="go('travelers')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+        Travelers
+      </div>
+      <div class="nav-item" id="nav-cases" onclick="go('cases')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+        Cases
+      </div>
+      <div class="nav-item nav-admin" id="nav-admin" onclick="go('admin')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        Admin Panel
+      </div>
+      <div class="nav-item nav-admin" id="nav-analytics" onclick="go('analytics')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        Analytics
+      </div>
+      <div class="nav-item nav-write" id="nav-biometric" onclick="go('biometric')">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.625 2.655A9 9 0 0119 11a1 1 0 11-2 0 7 7 0 00-9.625-6.492 1 1 0 11-.75-1.853zM4.662 4.959A1 1 0 014.75 6.37 6.97 6.97 0 003 11a1 1 0 11-2 0 8.97 8.97 0 012.25-5.953 1 1 0 011.412-.088z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M5 11a5 5 0 1110 0 1 1 0 11-2 0 3 3 0 10-6 0c0 1.677-.345 3.276-.968 4.729a1 1 0 11-1.838-.789A9.964 9.964 0 005 11zm8.921 2.012a1 1 0 01.831 1.145 19.86 19.86 0 01-.545 2.436 1 1 0 11-1.92-.558c.207-.713.371-1.445.484-2.189a1 1 0 011.15-.834zM9 6a5 5 0 015 5 1 1 0 01-2 0 3 3 0 00-3-3 1 1 0 010-2z" clip-rule="evenodd"/></svg>
+        Biometric Scan
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebar-avatar">A</div>
+        <div><div class="user-name" id="sidebar-name">—</div><div class="user-role-txt" id="sidebar-role">—</div></div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+        Sign out
+      </button>
+    </div>
+  </nav>
+  <div id="main-wrap">
+    <div id="topbar">
+      <span class="topbar-title" id="page-title">Dashboard</span>
+      <div class="topbar-right" id="topbar-right">
+        <span class="topbar-badge" id="topbar-badge"></span>
+        <span class="topbar-user" id="topbar-user"></span>
+        <span class="topbar-badge-num" id="topbar-badge-num"></span>
+      </div>
+    </div>
+    <div id="page"></div>
+  </div>
+</div>
+
+<script>
+const API='';
+let currentUser=null,currentToken=null;
+const pgState={travelers:1,cases:1};
+let travelersFilters={status:'',nationality:'',startDate:'',endDate:''};
+let casesFilters={status:'',caseType:'',priority:''};
+let newEntryDocData=null;
+
+// ── Toast ──
+function toast(type,msg){
+  const root=document.getElementById('toast-root');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span class="toast-icon">${{success:'✓',error:'✕',info:'i'}[type]}</span><span class="toast-msg">${msg}</span>`;
+  root.appendChild(el);setTimeout(()=>el.remove(),4000);
+}
+
+// ── API ──
+async function req(method,path,body){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(currentToken)opts.headers['Authorization']=`Bearer ${currentToken}`;
+  if(body)opts.body=JSON.stringify(body);
+  const r=await fetch('/api'+path,opts);
+  if(r.status===401){doLogout();return;}
+  const data=await r.json();
+  if(!r.ok)throw new Error(data.message||'Request failed');
+  return data;
+}
+
+// ── Auth ──
+function fillDemo(e,p){document.getElementById('login-email').value=e;document.getElementById('login-pass').value=p;}
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-error');
+  const btn=document.getElementById('login-btn');
+  errEl.classList.add('hidden');btn.disabled=true;
+  btn.innerHTML=`<span class="spinner" style="width:16px;height:16px;margin-right:6px"></span>Authenticating…`;
+  try{
+    const data=await req('POST','/auth/login',{email,password});
+    currentToken=data.token;currentUser=data.user;
+    localStorage.setItem('bs_token',data.token);localStorage.setItem('bs_user',JSON.stringify(data.user));
+    initApp();go('dashboard');
+  }catch(e){errEl.textContent=e.message;errEl.classList.remove('hidden');}
+  finally{btn.disabled=false;btn.textContent='Sign In';}
+}
+function doLogout(){
+  localStorage.removeItem('bs_token');localStorage.removeItem('bs_user');
+  currentToken=null;currentUser=null;
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login-page').classList.remove('hidden');
+}
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+document.getElementById('login-email').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+// ── Init ──
+const ROLE_LABELS={admin:'Administrator',border_officer:'Border Officer',ngo_coordinator:'NGO Coordinator'};
+const ROLE_BADGE={admin:'badge-admin',border_officer:'badge-border_officer',ngo_coordinator:'badge-ngo_coordinator'};
+function initApp(){
+  document.getElementById('login-page').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  const u=currentUser;
+  document.getElementById('sidebar-avatar').textContent=u.name[0].toUpperCase();
+  document.getElementById('sidebar-name').textContent=u.name;
+  document.getElementById('sidebar-role').textContent=ROLE_LABELS[u.role]||u.role;
+  document.getElementById('topbar-user').textContent=u.name;
+  document.getElementById('topbar-badge-num').textContent=`#${u.badgeNumber}`;
+  const b=document.getElementById('topbar-badge');
+  b.textContent=ROLE_LABELS[u.role]||u.role;b.className=`topbar-badge badge ${ROLE_BADGE[u.role]}`;
+  const isAdmin=u.role==='admin',isOfficer=u.role==='border_officer';
+  document.querySelectorAll('.nav-admin').forEach(el=>el.classList.toggle('hidden',!isAdmin));
+  document.querySelectorAll('.nav-write').forEach(el=>el.classList.toggle('hidden',!isAdmin&&!isOfficer));
+}
+
+// ── Router ──
+function go(page,params={}){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const nm={dashboard:'nav-dashboard','new-entry':'nav-new-entry',travelers:'nav-travelers','traveler-detail':'nav-travelers',cases:'nav-cases','case-detail':'nav-cases',admin:'nav-admin',analytics:'nav-analytics',biometric:'nav-biometric'};
+  document.getElementById(nm[page])?.classList.add('active');
+  const titles={dashboard:'Dashboard','new-entry':'New Entry',travelers:'Travelers','traveler-detail':'Traveler Detail',cases:'Cases','case-detail':'Case Detail',admin:'Admin Panel',analytics:'Analytics',biometric:'Biometric Scan'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  document.getElementById('page').innerHTML='';
+  document.getElementById('topbar-action-btn')?.remove();
+  ({dashboard:renderDashboard,'new-entry':renderNewEntry,travelers:renderTravelers,'traveler-detail':()=>renderTravelerDetail(params.id),cases:renderCases,'case-detail':()=>renderCaseDetail(params.id),admin:renderAdmin,analytics:renderAnalytics,biometric:renderBiometric})[page]?.();
+}
+
+// ── Helpers ──
+const fmtDT=d=>d?new Date(d).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+const fmtD=d=>d?new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+const fmtDOB=d=>d?new Date(d).toLocaleDateString('en-US',{dateStyle:'long'}):'—';
+function badge(status,dot=false){
+  if(!status)return'—';
+  const d=dot?'<span class="badge-dot"></span>':'';
+  return`<span class="badge badge-${status}">${d}${status.replace(/_/g,' ')}</span>`;
+}
+const canWrite=()=>currentUser?.role==='admin'||currentUser?.role==='border_officer';
+const isAdmin=()=>currentUser?.role==='admin';
+const loader=()=>'<div class="page-loader"><div class="spinner" style="width:28px;height:28px;border-width:3px"></div></div>';
+function addTopBtn(label,onclick){
+  const btn=document.createElement('button');
+  btn.id='topbar-action-btn';btn.className='btn btn-primary btn-sm';
+  btn.innerHTML=`<svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg> ${label}`;
+  btn.onclick=onclick;document.getElementById('topbar-right').prepend(btn);
+}
+function pgHtml(page,totalPages,onclickFn){
+  if(totalPages<=1)return'';
+  let h=`<div class="pagination"><span class="pg-info">Page ${page} of ${totalPages}</span>`;
+  h+=`<button class="pg-btn" onclick="${onclickFn}(${page-1})" ${page===1?'disabled':''}>←</button>`;
+  for(let i=1;i<=totalPages;i++)h+=`<button class="pg-btn ${i===page?'active':''}" onclick="${onclickFn}(${i})">${i}</button>`;
+  h+=`<button class="pg-btn" onclick="${onclickFn}(${page+1})" ${page===totalPages?'disabled':''}>→</button></div>`;
+  return h;
+}
+
+// ══ DASHBOARD ══
+async function renderDashboard(){
+  const pg=document.getElementById('page');pg.innerHTML=loader();
+  if(canWrite())addTopBtn('New Entry',()=>go('new-entry'));
+  try{
+    const s=await req('GET','/dashboard/stats');
+    const isNGO=currentUser.role==='ngo_coordinator';
+    const stats=!isNGO?`
+    <div class="stat-grid cols6">
+      <div class="stat-card"><div class="stat-glow" style="background:var(--accent)"></div><div class="stat-lbl">Today's Entries</div><div class="stat-val">${s.totalToday??0}</div><div class="stat-icon">↑</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--amber)"></div><div class="stat-lbl">Pending</div><div class="stat-val">${s.pending??0}</div><div class="stat-icon">◌</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--green)"></div><div class="stat-lbl">Approved</div><div class="stat-val">${s.approved??0}</div><div class="stat-icon">✓</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--red)"></div><div class="stat-lbl">Flagged</div><div class="stat-val">${s.flagged??0}</div><div class="stat-icon">⚑</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--slate)"></div><div class="stat-lbl">Rejected</div><div class="stat-val">${s.rejected??0}</div><div class="stat-icon">✕</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--sky)"></div><div class="stat-lbl">Open Cases</div><div class="stat-val">${s.openCases??0}</div><div class="stat-icon">◉</div></div>
+    </div>`:`
+    <div class="stat-grid cols2">
+      <div class="stat-card"><div class="stat-glow" style="background:var(--sky)"></div><div class="stat-lbl">Open Cases</div><div class="stat-val">${s.openCases??0}</div><div class="stat-icon">◉</div></div>
+      <div class="stat-card"><div class="stat-glow" style="background:var(--red)"></div><div class="stat-lbl">Flagged</div><div class="stat-val">${s.flagged??0}</div><div class="stat-icon">⚑</div></div>
+    </div>`;
+    const recent=!isNGO?`
+    <div class="card fade-up">
+      <div class="card-header"><div><h2>Recent Entries</h2><p>Latest traveler registrations</p></div><button class="btn btn-ghost btn-sm" onclick="go('travelers')">View all →</button></div>
+      <div class="tbl-wrap" style="border:none;border-radius:0"><div class="tbl-scroll"><table>
+        <thead><tr><th>Name</th><th>Nationality</th><th>Doc Type</th><th>Status</th><th>Entry Time</th></tr></thead>
+        <tbody>${(s.recentEntries||[]).map(t=>`<tr class="clickable" onclick="go('traveler-detail',{id:'${t._id}'})"><td class="td-primary">${t.name}</td><td class="td-dim">${t.nationality}</td><td class="td-mono" style="text-transform:capitalize">${(t.documentType||'').replace('_',' ')}</td><td>${badge(t.status,true)}</td><td class="td-mono">${fmtDT(t.entryTime)}</td></tr>`).join('')||'<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-txt">No entries yet today</div></div></td></tr>'}</tbody>
+      </table></div></div>
+    </div>`:`<div class="card fade-up" style="padding:40px;text-align:center"><div style="font-size:36px;opacity:.15;margin-bottom:12px">◉</div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Cases Overview</div><div style="font-size:13px;color:var(--muted);margin-bottom:18px">You have read-only access to cases and traveler data.</div><button class="btn btn-ghost btn-sm" onclick="go('cases')">Browse Cases →</button></div>`;
+    pg.innerHTML=`<div class="fade-up">${stats}${recent}</div>`;
+  }catch(e){pg.innerHTML=`<div style="color:var(--red);padding:20px">${e.message}</div>`;}
+}
+
+// ══ NEW ENTRY ══
+function renderNewEntry(){
+  newEntryDocData=null;
+  document.getElementById('page').innerHTML=`
+  <div class="fade-up" style="max-width:640px;margin:0 auto"><div class="card">
+    <div class="card-header"><div><h2>Traveler Registration</h2><p>Register a new traveler at the border checkpoint</p></div><button class="btn btn-ghost btn-sm" onclick="go('travelers')">← Back</button></div>
+    <div class="card-body">
+      <div class="field-row col2">
+        <div><label class="lbl">Full Name *</label><input id="ne-name" placeholder="Maria Santos"/></div>
+        <div><label class="lbl">Nationality *</label><input id="ne-nat" placeholder="Brazilian"/></div>
+      </div>
+      <div class="field-row col2">
+        <div><label class="lbl">Document Type *</label><select id="ne-dtype"><option value="passport">Passport</option><option value="visa">Visa</option><option value="refugee_card">Refugee Card</option></select></div>
+        <div><label class="lbl">Document Number *</label><input id="ne-dnum" placeholder="AB-1234567"/></div>
+      </div>
+      <div class="field"><label class="lbl">Date of Birth *</label><input type="date" id="ne-dob"/></div>
+      <div class="field"><label class="lbl">Notes</label><textarea id="ne-notes" rows="3" placeholder="Additional observations or flags…"></textarea></div>
+      <div class="field">
+        <label class="lbl">Document Scan (optional)</label>
+        <div class="upload-zone" id="ne-upload-zone" onclick="document.getElementById('ne-file').click()">
+          <div id="ne-upload-content"><div class="upload-icon">🪪</div><div class="upload-txt">Click to upload passport / ID scan</div><div class="upload-txt" style="margin-top:4px;font-size:11px;opacity:.6">PNG, JPG, WEBP — max 5MB · OCR will auto-fill fields</div></div>
+          <input type="file" id="ne-file" accept="image/*" style="display:none" onchange="handleDocFile(event)"/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="go('travelers')">Cancel</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" id="ne-submit" onclick="submitNewEntry()">Create Entry</button>
+      </div>
+    </div>
+  </div></div>`;
+}
+function handleDocFile(e){
+  const file=e.target.files[0];if(!file)return;
+  if(file.size>5*1024*1024){toast('error','File must be under 5MB');return;}
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    newEntryDocData={fileName:file.name,fileType:file.type,base64Data:ev.target.result.split(',')[1],uploadedAt:new Date().toISOString()};
+    const zone=document.getElementById('ne-upload-zone');
+    zone.classList.add('has-file');
+    document.getElementById('ne-upload-content').innerHTML='<img src="'+ev.target.result+'" class="upload-preview"/><div class="upload-txt" style="font-size:11px">'+file.name+'</div><div class="upload-txt" style="font-size:10px;margin-top:4px;opacity:.6">Click to replace</div><div id="ocr-status" style="margin-top:8px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--accenthi)">🔍 Scanning document…</div>';
+  };
+  reader.readAsDataURL(file);
+  // Run OCR
+  runOCR(file);
+}
+
+async function runOCR(file){
+  try{
+    const formData=new FormData();
+    formData.append('document',file);
+    const r=await fetch('/api/ocr/scan',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+currentToken},
+      body:formData
+    });
+    const data=await r.json();
+    const statusEl=document.getElementById('ocr-status');
+    if(!data.success){
+      if(statusEl)statusEl.innerHTML='<span style="color:var(--amber)">⚠ OCR failed — fill manually</span>';
+      return;
+    }
+    const f=data.extracted||{};
+    let filled=[];
+    if(f.docNumber){
+      const el=document.getElementById('ne-dnum');
+      if(el&&!el.value){el.value=f.docNumber;filled.push('Doc Number');}
+    }
+    if(f.name){
+      const el=document.getElementById('ne-name');
+      if(el&&!el.value){el.value=f.name;filled.push('Name');}
+    }
+    if(f.nationality){
+      const el=document.getElementById('ne-nat');
+      if(el&&!el.value){el.value=f.nationality;filled.push('Nationality');}
+    }
+    if(f.dateOfBirth){
+      const el=document.getElementById('ne-dob');
+      if(el&&!el.value){el.value=f.dateOfBirth;filled.push('Date of Birth');}
+    }
+    if(f.documentType){
+      const el=document.getElementById('ne-dtype');
+      if(el){el.value=f.documentType;filled.push('Doc Type');}
+    }
+    if(statusEl){
+      if(filled.length>0){
+        statusEl.innerHTML='<span style="color:var(--green)">✓ Auto-filled: '+filled.join(', ')+'</span>';
+        toast('success','OCR extracted: '+filled.join(', '));
+      } else {
+        statusEl.innerHTML='<span style="color:var(--amber)">⚠ OCR ran but could not extract fields — fill manually</span>';
+        toast('info','OCR confidence: '+data.confidence+'% — please verify fields');
+      }
+    }
+  }catch(err){
+    const statusEl=document.getElementById('ocr-status');
+    if(statusEl)statusEl.innerHTML='<span style="color:var(--amber)">⚠ OCR unavailable — fill manually</span>';
+  }
+}
+async function submitNewEntry(){
+  const btn=document.getElementById('ne-submit');
+  const name=document.getElementById('ne-name').value.trim(),nat=document.getElementById('ne-nat').value.trim(),
+    dtype=document.getElementById('ne-dtype').value,dnum=document.getElementById('ne-dnum').value.trim(),
+    dob=document.getElementById('ne-dob').value,notes=document.getElementById('ne-notes').value.trim();
+  if(!name||!nat||!dtype||!dnum||!dob){toast('error','Please fill all required fields');return;}
+  btn.disabled=true;btn.innerHTML=`<span class="spinner" style="width:15px;height:15px;margin-right:6px"></span>Creating…`;
+  try{
+    await req('POST','/travelers',{name,nationality:nat,documentType:dtype,documentNumber:dnum,dateOfBirth:dob,notes,scannedDocumentData:newEntryDocData||undefined});
+    toast('success','Traveler entry created successfully');go('dashboard');
+  }catch(e){toast('error',e.message);btn.disabled=false;btn.textContent='Create Entry';}
+}
+
+// ══ TRAVELERS LIST ══
+function renderTravelers(){
+  if(canWrite())addTopBtn('New Entry',()=>go('new-entry'));
+  document.getElementById('page').innerHTML=`
+  <div class="fade-up">
+    <div class="filter-bar">
+      <div class="filter-field"><label>Status</label><select id="tf-status" onchange="travelersFilters.status=this.value"><option value="">All Statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="flagged">Flagged</option><option value="rejected">Rejected</option></select></div>
+      <div class="filter-field"><label>Nationality</label><input id="tf-nat" placeholder="e.g. Brazilian" oninput="travelersFilters.nationality=this.value"/></div>
+      <div class="filter-field"><label>From Date</label><input type="date" id="tf-from" onchange="travelersFilters.startDate=this.value"/></div>
+      <div class="filter-field"><label>To Date</label><input type="date" id="tf-to" onchange="travelersFilters.endDate=this.value"/></div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="pgState.travelers=1;loadTravelersList()">Filter</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearTravelersFilters()">Clear</button>
+      </div>
+    </div>
+    <div id="travelers-count" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+    <div id="travelers-table">${loader()}</div>
+    <div id="travelers-pg"></div>
+  </div>`;
+  loadTravelersList();
+}
+function clearTravelersFilters(){
+  travelersFilters={status:'',nationality:'',startDate:'',endDate:''};
+  ['tf-status','tf-nat','tf-from','tf-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  pgState.travelers=1;loadTravelersList();
+}
+async function loadTravelersList(){
+  const tbl=document.getElementById('travelers-table');if(!tbl)return;tbl.innerHTML=loader();
+  const p={page:pgState.travelers,limit:10,...Object.fromEntries(Object.entries(travelersFilters).filter(([,v])=>v))};
+  try{
+    const data=await req('GET',`/travelers?${new URLSearchParams(p)}`);
+    const items=data.data||[],{total,totalPages,page}=data.pagination||{};
+    document.getElementById('travelers-count').textContent=`${total||0} traveler${total!==1?'s':''} found`;
+    tbl.innerHTML=`<div class="tbl-wrap"><div class="tbl-scroll"><table>
+      <thead><tr><th>Name</th><th>Nationality</th><th>Doc Type</th><th>Doc #</th><th>Status</th><th>Entry Time</th><th></th></tr></thead>
+      <tbody>${items.map(t=>`<tr class="clickable" onclick="go('traveler-detail',{id:'${t._id}'})"><td class="td-primary">${t.name}</td><td class="td-dim">${t.nationality}</td><td class="td-mono" style="text-transform:capitalize">${(t.documentType||'').replace('_',' ')}</td><td class="td-mono">${t.documentNumber}</td><td>${badge(t.status,true)}</td><td class="td-mono">${fmtDT(t.entryTime)}</td><td><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();go('traveler-detail',{id:'${t._id}'})">View →</button></td></tr>`).join('')||'<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">◈</div><div class="empty-txt">No travelers match filters</div></div></td></tr>'}</tbody>
+    </table></div></div>`;
+    document.getElementById('travelers-pg').innerHTML=pgHtml(page,totalPages,'travelerPage');
+  }catch(e){tbl.innerHTML=`<div style="color:var(--red);padding:20px">${e.message}</div>`;}
+}
+function travelerPage(p){pgState.travelers=p;loadTravelersList();}
+
+// ══ TRAVELER DETAIL ══
+async function renderTravelerDetail(id){
+  const pg=document.getElementById('page');pg.innerHTML=`<div style="max-width:720px;margin:0 auto">${loader()}</div>`;
+  try{
+    const data=await req('GET',`/travelers/${id}`);
+    buildTravelerDetailHTML(data.traveler,data.case);
+  }catch(e){toast('error','Traveler not found');go('travelers');}
+}
+function buildTravelerDetailHTML(t,linkedCase){
+  const pg=document.getElementById('page');
+  const docScan=t.scannedDocumentData?.base64Data?`<div style="padding:0 22px 20px"><div class="df-label">Scanned Document</div><img src="data:${t.scannedDocumentData.fileType};base64,${t.scannedDocumentData.base64Data}" style="max-height:160px;border-radius:10px;border:1px solid var(--border);object-fit:contain;background:var(--bg)"/></div>`:'';
+  const notesBlock=t.notes?`<div style="padding:0 22px 20px"><div class="df-label">Notes</div><div style="font-size:13px;color:var(--textdim);background:rgba(12,10,24,.5);border:1px solid var(--border);border-radius:10px;padding:12px 14px;white-space:pre-wrap">${t.notes}</div></div>`:'';
+  const updateSection=canWrite()?`
+    <div class="card fade-up" style="margin-top:16px">
+      <div class="card-header"><h2>Update Record</h2></div>
+      <div class="card-body">
+        <div class="field-row col2">
+          <div><label class="lbl">Change Status</label><select id="td-status"><option value="pending" ${t.status==='pending'?'selected':''}>Pending</option><option value="approved" ${t.status==='approved'?'selected':''}>Approved</option><option value="flagged" ${t.status==='flagged'?'selected':''}>Flagged</option><option value="rejected" ${t.status==='rejected'?'selected':''}>Rejected</option></select></div>
+          <div style="display:flex;align-items:flex-end">${isAdmin()? ('<button class="btn btn-danger" style="width:100%;justify-content:center" onclick="deleteTraveler(\''+t._id+'\')">' + 'Delete Traveler</button>') : ''}</div>
+        </div>
+        <div class="field"><label class="lbl">Notes</label><textarea id="td-notes" rows="3" placeholder="Add or edit notes…">${t.notes||''}</textarea></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" id="td-save-btn" onclick="saveTravelerUpdate('${t._id}')">Save Changes</button>
+      </div>
+    </div>`:''
+  ;
+  let caseSection='';
+  if(linkedCase){
+    caseSection=`<div class="card fade-up" style="margin-top:16px"><div class="card-header"><h2>Linked Case</h2></div><div class="card-body"><div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(12,10,24,.5);border:1px solid var(--border);border-radius:10px;cursor:pointer" onclick="go('case-detail',{id:'${linkedCase._id}'})"><div style="display:flex;align-items:center;gap:12px"><div style="width:36px;height:36px;border-radius:9px;background:rgba(61,53,128,.3);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accenthi)">#${(linkedCase._id||'').slice(-4).toUpperCase()}</div><div><div style="font-size:13px;font-weight:600;color:var(--text);text-transform:capitalize">${(linkedCase.caseType||'').replace('_',' ')} case</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Opened ${fmtDT(linkedCase.createdAt)}</div></div></div><div style="display:flex;gap:6px">${badge(linkedCase.priority)} ${badge(linkedCase.status,true)}</div></div></div></div>`;
+  }else if(canWrite()){
+    caseSection=`<div class="card fade-up" style="margin-top:16px"><div class="card-header"><div><h2>Linked Case</h2></div><button class="btn btn-ghost btn-sm" onclick="toggleCaseForm()">+ Open Case</button></div><div id="case-form-wrap" class="hidden"><div class="card-body" style="border-top:1px solid var(--border)"><div class="field-row col2"><div><label class="lbl">Case Type</label><select id="cf-ctype"><option value="regular">Regular</option><option value="refugee">Refugee</option><option value="asylum">Asylum</option><option value="flagged">Flagged</option></select></div><div><label class="lbl">Priority</label><select id="cf-prio"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div></div><div style="display:flex;gap:10px"><button class="btn btn-primary" style="flex:1;justify-content:center" id="cf-open-btn" onclick="openCase('${t._id}')">Open Case</button><button class="btn btn-ghost" onclick="toggleCaseForm()">Cancel</button></div></div></div><div id="no-case-msg" class="card-body" style="color:var(--muted);font-size:13px;text-align:center;padding:24px">No case linked to this traveler.</div></div>`;
+  }
+  pg.innerHTML=`<div style="max-width:720px;margin:0 auto" class="fade-up">
+    <div style="margin-bottom:16px"><button class="btn btn-ghost btn-sm" onclick="go('travelers')">← Back to Travelers</button></div>
+    <div class="card">
+      <div class="profile-head"><div class="profile-avatar">${t.name[0].toUpperCase()}</div><div><div class="profile-name">${t.name}</div><div class="profile-sub"><span style="font-size:13px;color:var(--muted)">${t.nationality}</span><span style="color:var(--border)">·</span>${badge(t.status,true)}</div></div><div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:4px 10px;border-radius:8px">${(t._id||'').slice(-8).toUpperCase()}</div></div>
+      <div class="detail-grid">
+        <div><div class="df-label">Document Type</div><div class="df-value" style="text-transform:capitalize">${(t.documentType||'').replace('_',' ')}</div></div>
+        <div><div class="df-label">Document Number</div><div class="df-value">${t.documentNumber}</div></div>
+        <div><div class="df-label">Date of Birth</div><div class="df-value">${fmtDOB(t.dateOfBirth)}</div></div>
+        <div><div class="df-label">Entry Time</div><div class="df-value">${fmtDT(t.entryTime)}</div></div>
+        <div><div class="df-label">Exit Time</div><div class="df-value">${fmtDT(t.exitTime)}</div></div>
+        <div><div class="df-label">Assigned Officer</div><div class="df-value">${t.assignedOfficerId?.name||'Unassigned'}</div></div>
+      </div>
+      ${notesBlock}${docScan}
+    </div>
+    ${updateSection}${caseSection}
+  </div>`;
+}
+function toggleCaseForm(){document.getElementById('case-form-wrap').classList.toggle('hidden');document.getElementById('no-case-msg').classList.toggle('hidden');}
+async function saveTravelerUpdate(id){
+  const btn=document.getElementById('td-save-btn');
+  btn.disabled=true;btn.innerHTML=`<span class="spinner" style="width:15px;height:15px;margin-right:6px"></span>Saving…`;
+  try{
+    await req('PATCH',`/travelers/${id}`,{status:document.getElementById('td-status').value,notes:document.getElementById('td-notes').value});
+    toast('success','Traveler updated successfully');renderTravelerDetail(id);
+  }catch(e){toast('error',e.message);btn.disabled=false;btn.textContent='Save Changes';}
+}
+async function deleteTraveler(id){
+  if(!confirm('Permanently delete this traveler and all related cases?'))return;
+  try{await req('DELETE',`/travelers/${id}`);toast('success','Traveler deleted');go('travelers');}
+  catch(e){toast('error',e.message);}
+}
+async function openCase(travelerId){
+  const btn=document.getElementById('cf-open-btn');
+  btn.disabled=true;btn.innerHTML=`<span class="spinner" style="width:15px;height:15px;margin-right:6px"></span>Opening…`;
+  try{
+    await req('POST','/cases',{travelerId,caseType:document.getElementById('cf-ctype').value,priority:document.getElementById('cf-prio').value});
+    toast('success','Case opened successfully');renderTravelerDetail(travelerId);
+  }catch(e){toast('error',e.message);btn.disabled=false;btn.textContent='Open Case';}
+}
+
+// ══ CASES LIST ══
+function renderCases(){
+  document.getElementById('page').innerHTML=`
+  <div class="fade-up">
+    <div class="filter-bar">
+      <div class="filter-field"><label>Status</label><select id="cff-status" onchange="casesFilters.status=this.value"><option value="">All Statuses</option><option value="open">Open</option><option value="in_progress">In Progress</option><option value="resolved">Resolved</option><option value="escalated">Escalated</option></select></div>
+      <div class="filter-field"><label>Case Type</label><select id="cff-type" onchange="casesFilters.caseType=this.value"><option value="">All Types</option><option value="regular">Regular</option><option value="refugee">Refugee</option><option value="asylum">Asylum</option><option value="flagged">Flagged</option></select></div>
+      <div class="filter-field"><label>Priority</label><select id="cff-prio" onchange="casesFilters.priority=this.value"><option value="">All Priorities</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+      <div style="display:flex;gap:8px;align-items:flex-end">
+        <button class="btn btn-primary btn-sm" onclick="pgState.cases=1;loadCasesList()">Filter</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearCasesFilters()">Clear</button>
+      </div>
+    </div>
+    <div id="cases-count" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:10px"></div>
+    <div id="cases-table">${loader()}</div>
+    <div id="cases-pg"></div>
+  </div>`;
+  loadCasesList();
+}
+function clearCasesFilters(){
+  casesFilters={status:'',caseType:'',priority:''};
+  ['cff-status','cff-type','cff-prio'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  pgState.cases=1;loadCasesList();
+}
+async function loadCasesList(){
+  const tbl=document.getElementById('cases-table');if(!tbl)return;tbl.innerHTML=loader();
+  const p={page:pgState.cases,limit:10,...Object.fromEntries(Object.entries(casesFilters).filter(([,v])=>v))};
+  try{
+    const data=await req('GET',`/cases?${new URLSearchParams(p)}`);
+    const items=data.cases||[],total=data.total||0,totalPages=data.totalPages||1,page=data.page||1;
+    document.getElementById('cases-count').textContent=`${total} case${total!==1?'s':''} found`;
+    tbl.innerHTML=`<div class="tbl-wrap"><div class="tbl-scroll"><table>
+      <thead><tr><th>Case ID</th><th>Traveler</th><th>Type</th><th>Priority</th><th>Status</th><th>Assigned To</th><th>Updated</th></tr></thead>
+      <tbody>${items.map(c=>`<tr class="clickable" onclick="go('case-detail',{id:'${c._id}'})"><td class="td-mono">#${(c._id||'').slice(-8).toUpperCase()}</td><td class="td-primary">${c.travelerId?.name||'—'}</td><td class="td-mono" style="text-transform:capitalize">${(c.caseType||'').replace('_',' ')}</td><td>${badge(c.priority)}</td><td>${badge(c.status,true)}</td><td class="td-dim">${c.assignedOfficerId?.name||'Unassigned'}</td><td class="td-mono">${fmtD(c.updatedAt)}</td></tr>`).join('')||'<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">◉</div><div class="empty-txt">No cases match filters</div></div></td></tr>'}</tbody>
+    </table></div></div>`;
+    document.getElementById('cases-pg').innerHTML=pgHtml(page,totalPages,'casePage');
+  }catch(e){tbl.innerHTML=`<div style="color:var(--red);padding:20px">${e.message}</div>`;}
+}
+function casePage(p){pgState.cases=p;loadCasesList();}
+
+// ══ CASE DETAIL ══
+async function renderCaseDetail(id){
+  const pg=document.getElementById('page');pg.innerHTML=`<div style="max-width:720px;margin:0 auto">${loader()}</div>`;
+  try{buildCaseDetailHTML(await req('GET',`/cases/${id}`));}
+  catch(e){toast('error','Case not found');go('cases');}
+}
+function buildCaseDetailHTML(c){
+  const pg=document.getElementById('page');
+  const t=c.travelerId||{},officer=c.assignedOfficerId||{};
+  const notes=[...(c.notes||[])].reverse();
+  const notesHtml=notes.length?notes.map((n,i)=>`<div class="timeline-item"><div class="timeline-line"><div class="timeline-avatar">${(n.author||'?')[0].toUpperCase()}</div>${i<notes.length-1?'<div class="timeline-connector"></div>':''}</div><div class="timeline-content"><div class="timeline-meta"><span class="timeline-author">${n.author||'Unknown'}</span><span class="timeline-time">${fmtDT(n.createdAt)}</span></div><div class="timeline-note">${n.text}</div></div></div>`).join(''):'<div style="text-align:center;padding:24px;font-size:13px;color:var(--muted)">No notes yet.</div>';
+  const travelerCard=t._id?`<div class="card fade-up" style="margin-bottom:16px"><div class="card-header"><div><h2>Traveler Record</h2></div><button class="btn btn-ghost btn-sm" onclick="go('traveler-detail',{id:'${t._id}'})">Open profile →</button></div><div class="detail-grid"><div><div class="df-label">Full Name</div><div class="df-value">${t.name||'—'}</div></div><div><div class="df-label">Nationality</div><div class="df-value">${t.nationality||'—'}</div></div><div><div class="df-label">Document Type</div><div class="df-value" style="text-transform:capitalize">${(t.documentType||'').replace('_',' ')}</div></div><div><div class="df-label">Document #</div><div class="df-value">${t.documentNumber||'—'}</div></div><div><div class="df-label">Entry Time</div><div class="df-value">${fmtDT(t.entryTime)}</div></div><div><div class="df-label">Traveler Status</div><div class="df-value">${badge(t.status,true)}</div></div></div>${t.notes?`<div style="padding:0 22px 20px"><div class="df-label">Notes</div><div style="font-size:13px;color:var(--textdim);background:rgba(12,10,24,.5);border:1px solid var(--border);border-radius:10px;padding:10px 14px">${t.notes}</div></div>`:''}</div>`:''
+  ;
+  const updateSection=canWrite()?`<div class="card fade-up"><div class="card-header"><h2>Update Case</h2></div><div class="card-body"><div class="field-row col2"><div><label class="lbl">Status</label><select id="cd-status"><option value="open" ${c.status==='open'?'selected':''}>Open</option><option value="in_progress" ${c.status==='in_progress'?'selected':''}>In Progress</option><option value="resolved" ${c.status==='resolved'?'selected':''}>Resolved</option><option value="escalated" ${c.status==='escalated'?'selected':''}>Escalated</option></select></div><div><label class="lbl">Priority</label><select id="cd-priority"><option value="low" ${c.priority==='low'?'selected':''}>Low</option><option value="medium" ${c.priority==='medium'?'selected':''}>Medium</option><option value="high" ${c.priority==='high'?'selected':''}>High</option></select></div></div><div class="field"><label class="lbl">Add Note</label><textarea id="cd-note" rows="3" placeholder="Enter case notes, observations or actions taken…"></textarea></div><button class="btn btn-primary" style="width:100%;justify-content:center" id="cd-save-btn" onclick="saveCaseUpdate('${c._id}')">Save Update</button></div></div>`:''
+  ;
+  pg.innerHTML=`<div style="max-width:720px;margin:0 auto" class="fade-up">
+    <div style="margin-bottom:16px"><button class="btn btn-ghost btn-sm" onclick="go('cases')">← Back to Cases</button></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="profile-head"><div style="width:46px;height:46px;border-radius:13px;background:rgba(61,53,128,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 20 20" fill="var(--accenthi)" width="22" height="22"><path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg></div><div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:2px">CASE #${(c._id||'').slice(-8).toUpperCase()}</div><div class="profile-name" style="text-transform:capitalize">${(c.caseType||'').replace('_',' ')} Case</div></div><div style="margin-left:auto;display:flex;gap:6px;align-items:center">${badge(c.priority)} ${badge(c.status,true)}</div></div>
+      <div class="detail-grid">
+        <div><div class="df-label">Case Type</div><div class="df-value" style="text-transform:capitalize">${(c.caseType||'').replace('_',' ')}</div></div>
+        <div><div class="df-label">Assigned To</div><div class="df-value">${officer.name||'Unassigned'}</div></div>
+        <div><div class="df-label">Badge #</div><div class="df-value">${officer.badgeNumber||'—'}</div></div>
+        <div><div class="df-label">Opened</div><div class="df-value">${fmtDT(c.createdAt)}</div></div>
+        <div><div class="df-label">Last Updated</div><div class="df-value">${fmtDT(c.updatedAt)}</div></div>
+        <div><div class="df-label">Notes</div><div class="df-value">${c.notes?.length||0} note${c.notes?.length!==1?'s':''}</div></div>
+      </div>
+    </div>
+    ${travelerCard}
+    ${buildNeedsPanel(c)}
+    <div class="card" style="margin-bottom:16px"><div class="card-header"><h2>Activity Timeline</h2></div><div class="timeline">${notesHtml}</div></div>
+    ${updateSection}
+  </div>`;
+}
+async function saveCaseUpdate(id){
+  const btn=document.getElementById('cd-save-btn');
+  btn.disabled=true;btn.innerHTML=`<span class="spinner" style="width:15px;height:15px;margin-right:6px"></span>Saving…`;
+  try{
+    const payload={status:document.getElementById('cd-status').value,priority:document.getElementById('cd-priority').value};
+    const note=document.getElementById('cd-note').value.trim();if(note)payload.note=note;
+    await req('PATCH',`/cases/${id}`,payload);
+    toast('success','Case updated successfully');renderCaseDetail(id);
+  }catch(e){toast('error',e.message);btn.disabled=false;btn.textContent='Save Update';}
+}
+
+// ══ ADMIN ══
+async function renderAdmin(){
+  document.getElementById('page').innerHTML=`
+  <div class="fade-up" style="max-width:760px;margin:0 auto">
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header"><div><h2>Register New Officer</h2><p>Create a new account for a border officer or coordinator</p></div></div>
+      <div class="card-body">
+        <div class="field-row col2"><div><label class="lbl">Full Name *</label><input id="reg-name" placeholder="Officer Name"/></div><div><label class="lbl">Email Address *</label><input type="email" id="reg-email" placeholder="officer@bordersync.io"/></div></div>
+        <div class="field-row col2"><div><label class="lbl">Password *</label><input type="password" id="reg-pass" placeholder="min. 6 characters"/></div><div><label class="lbl">Badge Number *</label><input id="reg-badge" placeholder="OFF-099"/></div></div>
+        <div class="field"><label class="lbl">Role *</label><select id="reg-role"><option value="border_officer">Border Officer</option><option value="ngo_coordinator">NGO Coordinator</option><option value="admin">Admin</option></select></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" id="reg-btn" onclick="submitRegister()">Register Officer</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><div><h2>All Officers</h2></div><span id="officers-count" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)"></span></div><div id="officers-list">${loader()}</div></div>
+  </div>`;
+  loadOfficers();
+}
+async function loadOfficers(){
+  const el=document.getElementById('officers-list');if(!el)return;
+  try{
+    const data=await req('GET','/admin/officers');
+    document.getElementById('officers-count').textContent=`${data.length} total`;
+    if(!data.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">◈</div><div class="empty-txt">No officers found.</div></div>';return;}
+    el.innerHTML=data.map(function(o){
+      var initials=(o.name||'?')[0].toUpperCase();
+      var inactiveBadge=!o.isActive?'<span style="font-family:monospace;font-size:9px;color:var(--red);background:var(--redbg);border:1px solid var(--redbdr);padding:2px 6px;border-radius:4px">INACTIVE</span>':'';
+      var toggleStyle=o.isActive?'':'background:var(--greenbg);color:var(--green);border:1px solid var(--greenbdr)';
+      var toggleClass='btn btn-xs'+(o.isActive?' btn-danger':'');
+      var toggleLabel=o.isActive?'Deactivate':'Activate';
+      var html='<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(37,35,64,.4)">';
+      html+='<div style="display:flex;align-items:center;gap:14px">';
+      html+='<div style="width:40px;height:40px;border-radius:11px;background:rgba(61,53,128,.35);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:var(--accenthi);flex-shrink:0;border:1px solid rgba(108,92,231,.2)">'+initials+'</div>';
+      html+='<div>';
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">';
+      html+='<span style="font-size:13px;font-weight:600;color:var(--text)">'+(o.name||'&mdash;')+'</span>'+inactiveBadge;
+      html+='</div>';
+      html+='<div style="display:flex;align-items:center;gap:8px">';
+      html+='<span style="font-size:11px;color:var(--muted)">'+(o.email||'&mdash;')+'</span>';
+      html+='<span style="color:var(--border)">&middot;</span>';
+      html+='<span style="font-size:10px;color:var(--muted)">#'+(o.badgeNumber||'&mdash;')+'</span>';
+      html+='</div></div></div>';
+      html+='<div style="display:flex;align-items:center;gap:10px">';
+      html+=badge(o.role);
+      html+='<span style="font-size:10px;color:var(--muted)">'+fmtD(o.createdAt)+'</span>';
+      html+='<button class="'+toggleClass+'" style="'+toggleStyle+'" onclick="toggleOfficer(\''+o._id+'\',this)">'+toggleLabel+'</button>';
+      html+='</div></div>';
+      return html;
+    }).join('');
+  }catch(e){el.innerHTML=`<div style="color:var(--red);padding:20px">${e.message}</div>`;}
+}
+async function submitRegister(){
+  const btn=document.getElementById('reg-btn');
+  const name=document.getElementById('reg-name').value.trim(),email=document.getElementById('reg-email').value.trim(),
+    pass=document.getElementById('reg-pass').value,badge2=document.getElementById('reg-badge').value.trim(),role=document.getElementById('reg-role').value;
+  if(!name||!email||!pass||!badge2||!role){toast('error','All fields are required');return;}
+  btn.disabled=true;btn.innerHTML=`<span class="spinner" style="width:15px;height:15px;margin-right:6px"></span>Registering…`;
+  try{
+    await req('POST','/auth/register',{name,email,password:pass,badgeNumber:badge2,role});
+    toast('success',`Officer ${name} registered successfully`);
+    ['reg-name','reg-email','reg-pass','reg-badge'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('reg-role').value='border_officer';loadOfficers();
+  }catch(e){toast('error',e.message);}
+  finally{btn.disabled=false;btn.textContent='Register Officer';}
+}
+async function toggleOfficer(id,btn){
+  const prev=btn.textContent.trim();btn.disabled=true;btn.textContent='…';
+  try{const data=await req('PATCH',`/admin/officers/${id}/toggle`);toast('info',`Officer ${data.isActive?'activated':'deactivated'}`);loadOfficers();}
+  catch(e){toast('error',e.message);btn.disabled=false;btn.textContent=prev;}
+}
+
+
+
+// ══ ANALYTICS ══
+async function renderAnalytics(){
+  const pg=document.getElementById('page');
+  pg.innerHTML='<div class="fade-up"><div class="page-loader"><div class="spinner" style="width:28px;height:28px;border-width:3px"></div></div></div>';
+  try{
+    const [stats,tData,cData]=await Promise.all([
+      req('GET','/dashboard/stats'),
+      req('GET','/travelers?limit=1000'),
+      req('GET','/cases?limit=1000'),
+    ]);
+    const travelers=tData.data||[];
+    const cases=cData.cases||[];
+    const total=travelers.length||1;
+    const cTotal=cases.length||1;
+
+    const statusColors={approved:'#10B981',pending:'#F59E0B',flagged:'#EF4444',rejected:'#94A3B8'};
+    const statuses=['approved','pending','flagged','rejected'];
+    const sc={};
+    statuses.forEach(s=>sc[s]=travelers.filter(t=>t.status===s).length);
+
+    const docMap={passport:0,visa:0,refugee_card:0};
+    travelers.forEach(t=>{if(docMap[t.documentType]!==undefined)docMap[t.documentType]++;});
+
+    const natMap={};
+    travelers.forEach(t=>{natMap[t.nationality]=(natMap[t.nationality]||0)+1;});
+    const topNats=Object.entries(natMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+    const caseStatuses=['open','in_progress','resolved','escalated'];
+    const caseColors={open:'#38BDF8',in_progress:'#A78BFA',resolved:'#10B981',escalated:'#EF4444'};
+    const cc={};
+    caseStatuses.forEach(s=>cc[s]=cases.filter(c=>c.status===s).length);
+
+    const caseTypes=['regular','refugee','asylum','flagged'];
+    const caseTypeColors={regular:'#6C5CE7',refugee:'#38BDF8',asylum:'#10B981',flagged:'#EF4444'};
+    const ctc={};
+    caseTypes.forEach(t=>ctc[t]=cases.filter(c=>c.caseType===t).length);
+
+    // Build status bars
+    let statusBars='';
+    statuses.forEach(s=>{
+      statusBars+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<div style="width:10px;height:10px;border-radius:50%;background:'+statusColors[s]+';flex-shrink:0"></div>'
+        +'<span style="font-size:13px;color:var(--textdim);text-transform:capitalize">'+s+'</span>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<div style="width:80px;height:5px;border-radius:3px;background:var(--border);overflow:hidden">'
+        +'<div style="height:100%;width:'+Math.round(sc[s]/total*100)+'%;background:'+statusColors[s]+';border-radius:3px"></div>'
+        +'</div>'
+        +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--muted);min-width:28px;text-align:right">'+sc[s]+'</span>'
+        +'</div></div>';
+    });
+
+    // Build doc bars
+    let docBars='';
+    [['passport','Passport','#6C5CE7'],['visa','Visa','#38BDF8'],['refugee_card','Refugee Card','#F59E0B']].forEach(function(arr){
+      var key=arr[0],label=arr[1],color=arr[2];
+      docBars+='<div style="margin-bottom:20px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">'
+        +'<span style="font-size:13px;font-weight:500;color:var(--text)">'+label+'</span>'
+        +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--muted)">'+docMap[key]+' · '+Math.round(docMap[key]/total*100)+'%</span>'
+        +'</div>'
+        +'<div style="height:8px;border-radius:4px;background:var(--border);overflow:hidden">'
+        +'<div style="height:100%;width:'+Math.round(docMap[key]/total*100)+'%;background:'+color+';border-radius:4px"></div>'
+        +'</div></div>';
+    });
+
+    // Build nationality list
+    let natList='';
+    topNats.forEach(function(entry,i){
+      var nat=entry[0],count=entry[1];
+      natList+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+        +'<div style="width:24px;height:24px;border-radius:7px;background:rgba(108,92,231,.15);border:1px solid rgba(108,92,231,.2);display:flex;align-items:center;justify-content:center;font-family:\'Syne\',sans-serif;font-weight:700;font-size:10px;color:var(--accenthi);flex-shrink:0">'+(i+1)+'</div>'
+        +'<div style="flex:1">'
+        +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">'
+        +'<span style="font-size:13px;font-weight:500;color:var(--text)">'+nat+'</span>'
+        +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--muted)">'+count+'</span>'
+        +'</div>'
+        +'<div style="height:5px;border-radius:3px;background:var(--border);overflow:hidden">'
+        +'<div style="height:100%;width:'+Math.round(count/topNats[0][1]*100)+'%;background:linear-gradient(90deg,#6C5CE7,#8B7AFF);border-radius:3px"></div>'
+        +'</div></div></div>';
+    });
+
+    // Build case status bars
+    let caseBars='';
+    caseStatuses.forEach(function(s){
+      caseBars+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<div style="width:10px;height:10px;border-radius:50%;background:'+caseColors[s]+';flex-shrink:0"></div>'
+        +'<span style="font-size:13px;color:var(--textdim);text-transform:capitalize">'+s.replace('_',' ')+'</span>'
+        +'</div>'
+        +'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--muted)">'+cc[s]+'</span>'
+        +'</div>';
+    });
+
+    // Build case type cards
+    let caseTypeCards='';
+    caseTypes.forEach(function(t){
+      var w=cases.length?Math.max(10,Math.round(ctc[t]/cTotal*100)):10;
+      caseTypeCards+='<div style="text-align:center;padding:20px 16px;background:rgba(12,10,24,.5);border:1px solid var(--border);border-radius:12px">'
+        +'<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:36px;color:var(--text);margin-bottom:4px">'+ctc[t]+'</div>'
+        +'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px">'+t.replace('_',' ')+'</div>'
+        +'<div style="height:4px;border-radius:2px;background:'+caseTypeColors[t]+';opacity:.7;margin:0 auto;width:'+w+'%"></div>'
+        +'</div>';
+    });
+
+    pg.innerHTML=
+      '<div class="fade-up">'
+      +'<div class="stat-grid cols6" style="margin-bottom:20px">'
+      +'<div class="stat-card"><div class="stat-glow" style="background:var(--accent)"></div><div class="stat-lbl">Total Travelers</div><div class="stat-val">'+travelers.length+'</div></div>'
+      +'<div class="stat-card"><div class="stat-glow" style="background:var(--green)"></div><div class="stat-lbl">Approved</div><div class="stat-val">'+sc.approved+'</div></div>'
+      +'<div class="stat-card"><div class="stat-glow" style="background:var(--amber)"></div><div class="stat-lbl">Pending</div><div class="stat-val">'+sc.pending+'</div></div>'
+      +'<div class="stat-card"><div class="stat-glow" style="background:var(--red)"></div><div class="stat-lbl">Flagged</div><div class="stat-val">'+sc.flagged+'</div></div>'
+      +'<div class="stat-card"><div class="stat-glow" style="background:var(--slate)"></div><div class="stat-lbl">Rejected</div><div class="stat-val">'+sc.rejected+'</div></div>'
+      +'<div class="stat-card"><div class="stat-glow" style="background:var(--sky)"></div><div class="stat-lbl">Total Cases</div><div class="stat-val">'+cases.length+'</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
+        +'<div class="card"><div class="card-header"><div><h2>Traveler Status Breakdown</h2><p>Distribution across all statuses</p></div></div>'
+        +'<div class="card-body" style="display:flex;align-items:center;gap:32px">'
+        +'<canvas id="chart-status" width="160" height="160" style="flex-shrink:0"></canvas>'
+        +'<div style="flex:1">'+statusBars+'</div></div></div>'
+        +'<div class="card"><div class="card-header"><div><h2>Document Types</h2><p>Breakdown by document category</p></div></div>'
+        +'<div class="card-body">'+docBars+'</div></div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">'
+        +'<div class="card"><div class="card-header"><div><h2>Top Nationalities</h2><p>Most frequent traveler origins</p></div></div>'
+        +'<div class="card-body">'+natList+'</div></div>'
+        +'<div class="card"><div class="card-header"><div><h2>Case Status Overview</h2><p>Current state of all cases</p></div></div>'
+        +'<div class="card-body" style="display:flex;align-items:center;gap:32px">'
+        +'<canvas id="chart-cases" width="160" height="160" style="flex-shrink:0"></canvas>'
+        +'<div style="flex:1">'+caseBars+'</div></div></div>'
+      +'</div>'
+      +'<div class="card"><div class="card-header"><div><h2>Case Types Distribution</h2><p>Breakdown by case category</p></div></div>'
+      +'<div class="card-body" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">'+caseTypeCards+'</div></div>'
+      +'</div>';
+
+    drawDonut('chart-status',statuses.map(s=>sc[s]),statuses.map(s=>statusColors[s]));
+    drawDonut('chart-cases',caseStatuses.map(s=>cc[s]),caseStatuses.map(s=>caseColors[s]));
+  }catch(e){
+    document.getElementById('page').innerHTML='<div style="color:var(--red);padding:20px">'+e.message+'</div>';
+  }
+}
+
+function drawDonut(canvasId,data,colors){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const cx=80,cy=80,r=62,inner=42;
+  const total=data.reduce((a,b)=>a+b,0)||1;
+  let angle=-Math.PI/2;
+  ctx.clearRect(0,0,160,160);
+  data.forEach(function(val,i){
+    var slice=(val/total)*Math.PI*2;
+    if(slice<0.01)return;
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,angle,angle+slice);
+    ctx.arc(cx,cy,inner,angle+slice,angle,true);
+    ctx.closePath();
+    ctx.fillStyle=colors[i];
+    ctx.fill();
+    angle+=slice;
+  });
+  ctx.fillStyle='#E2E0F4';
+  ctx.font='bold 16px Syne, sans-serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(total,cx,cy);
+}
+
+
+// ══ NGO HUMANITARIAN NEEDS ══
+const NEEDS_CONFIG = [
+  { key: 'shelter',         label: 'Shelter Required',   icon: '🏠' },
+  { key: 'medical',         label: 'Medical Attention',  icon: '🏥' },
+  { key: 'legalSupport',    label: 'Legal Support',      icon: '⚖️' },
+  { key: 'childProtection', label: 'Child Protection',   icon: '👶' },
+  { key: 'food',            label: 'Food & Water',       icon: '🍽️' },
+  { key: 'psychosocial',    label: 'Psychosocial Support',icon: '🧠' },
+  { key: 'familyTracing',   label: 'Family Tracing',     icon: '👨‍👩‍👧' },
+  { key: 'transportation',  label: 'Transportation',     icon: '🚌' },
+];
+
+let currentNeeds = {};
+let currentNeedsId = null;
+
+function buildNeedsPanel(c) {
+  const needs = c.humanitarianNeeds || {};
+  currentNeeds = Object.assign({}, needs);
+  currentNeedsId = c._id;
+  const isNGOorAdmin = currentUser.role === 'ngo_coordinator' || currentUser.role === 'admin';
+  const checkedCount = Object.values(needs).filter(Boolean).length;
+
+  let items = '';
+  NEEDS_CONFIG.forEach(function(n) {
+    const checked = needs[n.key] ? 'checked' : '';
+    const checkmark = needs[n.key]
+      ? '<svg viewBox="0 0 12 12" fill="white" width="10" height="10"><path d="M2 6l3 3 5-5"/><path stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M2 6l3 3 5-5"/></svg>'
+      : '';
+    const clickAttr = isNGOorAdmin ? 'onclick="toggleNeed(\'' + n.key + '\')"' : '';
+    items += '<div class="need-item ' + checked + '" id="need-' + n.key + '" ' + clickAttr + '>'
+      + '<div class="need-check">' + checkmark + '</div>'
+      + '<span style="font-size:15px">' + n.icon + '</span>'
+      + '<span class="need-label">' + n.label + '</span>'
+      + '</div>';
+  });
+
+  const updatedLine = c.needsUpdatedBy
+    ? '<div class="needs-updated">Last updated by ' + c.needsUpdatedBy + ' · ' + fmtDT(c.needsUpdatedAt) + '</div>'
+    : '<div class="needs-updated">No assessment recorded yet.</div>';
+
+  const saveBtn = isNGOorAdmin
+    ? '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="saveNeeds()">Save Needs Assessment</button>'
+    : '';
+
+  const notesSection = isNGOorAdmin
+    ? '<div class="field" style="margin-top:14px"><label class="lbl">Assessment Notes</label><textarea id="needs-notes" rows="2" placeholder="Additional observations about humanitarian needs…">' + (c.needsNotes || '') + '</textarea></div>'
+    : (c.needsNotes ? '<div style="margin-top:12px;font-size:13px;color:var(--textdim);background:rgba(12,10,24,.5);border:1px solid var(--border);border-radius:10px;padding:10px 14px">' + c.needsNotes + '</div>' : '');
+
+  return '<div class="card fade-up" style="margin-bottom:16px" id="needs-panel">'
+    + '<div class="card-header"><div><h2>Traveler Needs Assessment</h2>'
+    + '<p>' + checkedCount + ' of ' + NEEDS_CONFIG.length + ' needs identified</p></div>'
+    + '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2)">NGO Panel</div>'
+    + '</div>'
+    + '<div class="card-body">'
+    + '<div class="needs-grid">' + items + '</div>'
+    + updatedLine
+    + notesSection
+    + saveBtn
+    + '</div></div>';
+}
+
+function toggleNeed(key) {
+  currentNeeds[key] = !currentNeeds[key];
+  const el = document.getElementById('need-' + key);
+  if (!el) return;
+  if (currentNeeds[key]) {
+    el.classList.add('checked');
+    el.querySelector('.need-check').innerHTML = '<svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M2 6l3 3 5-5"/></svg>';
+  } else {
+    el.classList.remove('checked');
+    el.querySelector('.need-check').innerHTML = '';
+  }
+}
+
+async function saveNeeds() {
+  const btn = document.querySelector('#needs-panel .btn-primary');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner" style="width:15px;height:15px;margin-right:6px"></span>Saving…'; }
+  try {
+    const notesEl = document.getElementById('needs-notes');
+    await req('PATCH', '/cases/' + currentNeedsId + '/needs', {
+      humanitarianNeeds: currentNeeds,
+      needsNotes: notesEl ? notesEl.value : '',
+    });
+    toast('success', 'Needs assessment saved');
+    renderCaseDetail(currentNeedsId);
+  } catch(e) {
+    toast('error', e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Needs Assessment'; }
+  }
+}
+
+
+// ══ BIOMETRIC ══
+let bioState = { scanning: false, step: 0, result: null, matchedTraveler: null };
+
+function renderBiometric() {
+  faceState = { modelsLoaded: false, loading: false, probeDescriptor: null, travelers: [], probeImg: null };
+  document.getElementById('page').innerHTML =
+    '<div class="fade-up" style="max-width:960px;margin:0 auto">'
+    + '<div style="display:flex;gap:4px;margin-bottom:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;width:fit-content">'
+    + '<button class="btn" id="bio-tab-fp" onclick="switchBioTab(\'fingerprint\')" style="border-radius:9px;padding:7px 20px;font-size:13px;background:var(--card);color:var(--text);border:none;box-shadow:0 1px 4px rgba(0,0,0,.3)">&#128269; Fingerprint</button>'
+    + '<button class="btn" id="bio-tab-face" onclick="switchBioTab(\'face\')" style="border-radius:9px;padding:7px 20px;font-size:13px;background:transparent;color:var(--muted);border:none">&#128100; Face Recognition</button>'
+    + '</div>'
+    + '<div id="bio-tab-fp-content">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+
+    // LEFT — scanner panel
+    + '<div>'
+    + '<div class="card" style="margin-bottom:16px">'
+    + '<div class="card-header"><div><h2>Fingerprint Scanner</h2><p>Place finger on sensor or simulate scan</p></div>'
+    + '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(56,189,248,.08);color:var(--sky);border:1px solid rgba(56,189,248,.2)">DEVICE READY</div>'
+    + '</div>'
+    + '<div class="card-body" style="text-align:center;padding:32px 24px">'
+
+    // Scanner circle
+    + '<div class="bio-scanner" id="bio-scanner" onclick="startBioScan()">'
+    + '<div class="bio-ring"></div><div class="bio-ring2"></div>'
+    + '<div class="bio-scan-line"></div>'
+    + '<div class="bio-icon" id="bio-icon">'
+    + '<svg viewBox="0 0 80 80" fill="none" width="80" height="80">'
+    + '<path d="M20 32C20 24.268 27.163 18 36 18" stroke="rgba(108,92,231,0.6)" stroke-width="2" stroke-linecap="round"/>'
+    + '<path d="M52 18c8 2.5 12 9 12 14" stroke="rgba(108,92,231,0.6)" stroke-width="2" stroke-linecap="round"/>'
+    + '<path d="M16 44c0 10 7 18 24 18" stroke="rgba(108,92,231,0.6)" stroke-width="2" stroke-linecap="round"/>'
+    + '<path d="M56 50c-1 7-6 12-12 12" stroke="rgba(108,92,231,0.6)" stroke-width="2" stroke-linecap="round"/>'
+    + '<path d="M26 36c0-7.732 4.477-12 14-12s14 4.268 14 12c0 4-1 8-2 11" stroke="rgba(139,122,255,0.7)" stroke-width="2" stroke-linecap="round"/>'
+    + '<path d="M36 28c5 0 10 3.5 10 10 0 3-.5 7-1 10" stroke="rgba(139,122,255,0.8)" stroke-width="1.5" stroke-linecap="round"/>'
+    + '<path d="M30 30c-2 2-4 5-4 10 0 4 1 9 3 13" stroke="rgba(139,122,255,0.8)" stroke-width="1.5" stroke-linecap="round"/>'
+    + '<path d="M40 30c3 2 5 5 5 10 0 5-1 10-3 14" stroke="rgba(108,92,231,0.6)" stroke-width="1.5" stroke-linecap="round"/>'
+    + '<circle cx="40" cy="40" r="3" fill="rgba(108,92,231,0.4)"/>'
+    + '</svg>'
+    + '</div></div>'
+
+    + '<div id="bio-status-txt" style="margin-top:20px;font-size:13px;color:var(--muted)">Click scanner or press Simulate Scan</div>'
+
+    + '<div style="display:flex;gap:10px;justify-content:center;margin-top:20px">'
+    + '<button class="btn btn-primary" onclick="startBioScan()" id="bio-scan-btn">Simulate Scan</button>'
+    + '<button class="btn btn-ghost" onclick="resetBio()">Reset</button>'
+    + '</div></div></div>'
+
+    // Scan steps
+    + '<div class="card">'
+    + '<div class="card-header"><div><h2>Scan Protocol</h2></div></div>'
+    + '<div class="card-body">'
+    + bioStepHTML(1, 'Device Initialization', 'Connecting to biometric reader…')
+    + bioStepHTML(2, 'Finger Detection', 'Waiting for finger placement on sensor…')
+    + bioStepHTML(3, 'Image Capture', 'Capturing high-resolution fingerprint image…')
+    + bioStepHTML(4, 'Feature Extraction', 'Extracting minutiae points and ridge patterns…')
+    + bioStepHTML(5, 'Database Matching', 'Comparing against registered traveler records…')
+    + '</div></div></div>'
+
+    // RIGHT — manual entry + result
+    + '<div>'
+    + '<div class="card" style="margin-bottom:16px">'
+    + '<div class="card-header"><div><h2>Manual Biometric Entry</h2><p>Enter traveler ID to link biometric record</p></div></div>'
+    + '<div class="card-body">'
+    + '<div class="field"><label class="lbl">Traveler Document Number</label>'
+    + '<input id="bio-doc-input" placeholder="e.g. P1234567" oninput="bioClearResult()"/></div>'
+    + '<div class="field"><label class="lbl">Biometric Reference ID</label>'
+    + '<input id="bio-ref-input" placeholder="Auto-generated on scan" readonly style="opacity:.6"/></div>'
+    + '<div class="field"><label class="lbl">Scan Type</label>'
+    + '<select id="bio-type-select">'
+    + '<option value="fingerprint">Fingerprint</option>'
+    + '<option value="iris">Iris Scan</option>'
+    + '<option value="facial">Facial Recognition</option>'
+    + '<option value="palm">Palm Vein</option>'
+    + '</select></div>'
+    + '<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="bioLookup()">Verify Traveler</button>'
+    + '</div></div>'
+
+    // Biometric log
+    + '<div class="card">'
+    + '<div class="card-header"><div><h2>Scan Log</h2><p>Recent biometric activity</p></div></div>'
+    + '<div id="bio-log" style="padding:0 4px">'
+    + bioLogEntry('System initialized', 'SYSTEM', 'info')
+    + bioLogEntry('Biometric device ready', 'DEVICE', 'info')
+    + '</div></div>'
+
+    + '<div id="bio-result"></div>'
+    + '</div></div>'   // closes grid + fingerprint tab
+    + '</div>'         // closes bio-tab-fp-content
+
+    // Face Recognition Tab
+    + '<div id="bio-tab-face-content" style="display:none">'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+
+    // Left - probe image upload
+    + '<div>'
+    + '<div class="card" style="margin-bottom:16px">'
+    + '<div class="card-header"><div><h2>Upload Photo to Identify</h2><p>Upload a clear frontal face photo</p></div>'
+    + '<div id="face-model-status" style="font-family:IBM Plex Mono,monospace;font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(245,158,11,.08);color:var(--amber);border:1px solid rgba(245,158,11,.2)">Loading Models…</div>'
+    + '</div>'
+    + '<div class="card-body">'
+    + '<div class="face-drop" id="face-probe-drop" onclick="document.getElementById(\'face-probe-input\').click()" ondragover="event.preventDefault();this.classList.add(\'dragover\')" ondragleave="this.classList.remove(\'dragover\')" ondrop="handleFaceDrop(event)">'
+    + '<input type="file" id="face-probe-input" accept="image/*" style="display:none" onchange="handleFaceProbe(this.files[0])">'
+    + '<div id="face-probe-content">'
+    + '<div style="font-size:36px;opacity:.3;margin-bottom:8px">👤</div>'
+    + '<div style="font-size:13px;font-weight:500;color:var(--textdim);margin-bottom:4px">Drop photo here or click to upload</div>'
+    + '<div style="font-size:11px;color:var(--muted)">JPG, PNG — clear frontal face, good lighting</div>'
+    + '</div></div>'
+    + '<div id="face-probe-canvas" style="text-align:center;margin-top:12px"></div>'
+    + '</div></div>'
+
+    + '<div class="card">'
+    + '<div class="card-header"><div><h2>Detection Info</h2></div></div>'
+    + '<div class="card-body" id="face-detect-info">'
+    + '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Upload a photo to begin</div>'
+    + '</div></div></div>'
+
+    // Right - results
+    + '<div>'
+    + '<div class="card" style="margin-bottom:16px">'
+    + '<div class="card-header"><div><h2>Traveler Reference Photos</h2><p id="face-ref-count">Loading traveler records…</p></div>'
+    + '<button class="btn btn-ghost btn-sm" onclick="faceLoadTravelers()">Refresh</button>'
+    + '</div>'
+    + '<div id="face-ref-list" style="max-height:200px;overflow-y:auto;padding:8px 12px">'
+    + '<div class="page-loader"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>'
+    + '</div></div>'
+
+    + '<div class="card">'
+    + '<div class="card-header"><div><h2>Match Result</h2></div></div>'
+    + '<div id="face-result" class="card-body">'
+    + '<div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Run a scan to see results here</div>'
+    + '</div></div>'
+
+    + '<button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" id="face-run-btn" onclick="runFaceMatch()" disabled>Run Face Match</button>'
+    + '</div></div>'
+    + '</div>'   // closes bio-tab-face-content
+    + '</div>';  // closes page wrap
+
+  // init face tab in background
+  initFaceRecognition();
+}
+
+function bioStepHTML(num, title, desc) {
+  return '<div class="bio-step" id="bio-step-' + num + '">'
+    + '<div class="bio-step-num">' + num + '</div>'
+    + '<div><div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">' + title + '</div>'
+    + '<div style="font-size:11.5px;color:var(--muted)">' + desc + '</div>'
+    + '</div></div>';
+}
+
+function bioLogEntry(msg, source, type) {
+  const colors = { info: 'var(--sky)', success: 'var(--green)', error: 'var(--red)', warn: 'var(--amber)' };
+  const now = new Date().toLocaleTimeString('en-GB');
+  return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid rgba(37,35,64,.4)">'
+    + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:var(--muted);margin-top:2px;flex-shrink:0">' + now + '</span>'
+    + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(56,189,248,.1);color:' + colors[type] + ';flex-shrink:0">' + source + '</span>'
+    + '<span style="font-size:12px;color:var(--textdim)">' + msg + '</span>'
+    + '</div>';
+}
+
+function addBioLog(msg, source, type) {
+  const log = document.getElementById('bio-log');
+  if (!log) return;
+  log.insertAdjacentHTML('afterbegin', bioLogEntry(msg, source, type || 'info'));
+}
+
+function bioSetStep(n, state) {
+  const el = document.getElementById('bio-step-' + n);
+  if (!el) return;
+  el.className = 'bio-step ' + (state || '');
+  const num = el.querySelector('.bio-step-num');
+  if (state === 'done') num.innerHTML = '✓';
+  else if (state === 'fail') num.innerHTML = '✗';
+  else num.textContent = n;
+}
+
+function bioClearResult() {
+  const r = document.getElementById('bio-result');
+  if (r) r.innerHTML = '';
+}
+
+function resetBio() {
+  bioState = { scanning: false, step: 0, result: null, matchedTraveler: null };
+  const scanner = document.getElementById('bio-scanner');
+  if (scanner) { scanner.className = 'bio-scanner'; }
+  const btn = document.getElementById('bio-scan-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Simulate Scan'; }
+  const ref = document.getElementById('bio-ref-input');
+  if (ref) ref.value = '';
+  const statusTxt = document.getElementById('bio-status-txt');
+  if (statusTxt) { statusTxt.style.color = 'var(--muted)'; statusTxt.textContent = 'Click scanner or press Simulate Scan'; }
+  for (let i = 1; i <= 5; i++) bioSetStep(i, '');
+  bioClearResult();
+  addBioLog('System reset', 'SYSTEM', 'info');
+}
+
+function startBioScan() {
+  if (bioState.scanning) return;
+  bioState.scanning = true;
+  bioState.step = 0;
+
+  const scanner = document.getElementById('bio-scanner');
+  const btn     = document.getElementById('bio-scan-btn');
+  const statusTxt = document.getElementById('bio-status-txt');
+
+  if (scanner)    scanner.className = 'bio-scanner scanning';
+  if (btn)        { btn.disabled = true; btn.textContent = 'Scanning…'; }
+  if (statusTxt)  { statusTxt.style.color = 'var(--accenthi)'; statusTxt.textContent = 'Scan in progress…'; }
+
+  for (let i = 1; i <= 5; i++) bioSetStep(i, '');
+
+  const steps = [
+    { label: 'Initializing device…', delay: 400 },
+    { label: 'Detecting finger placement…', delay: 900 },
+    { label: 'Capturing fingerprint image…', delay: 1500 },
+    { label: 'Extracting biometric features…', delay: 2200 },
+    { label: 'Matching against database…', delay: 3000 },
+  ];
+
+  const sources = ['DEVICE', 'SENSOR', 'CAPTURE', 'EXTRACTOR', 'MATCHER'];
+  steps.forEach(function(s, i) {
+    setTimeout(function() {
+      bioSetStep(i + 1, 'active');
+      if (statusTxt) statusTxt.textContent = s.label;
+      addBioLog(s.label, sources[i], 'info');
+      if (i > 0) bioSetStep(i, 'done');
+    }, s.delay);
+  });
+
+  // Generate a fake biometric reference
+  setTimeout(function() {
+    const ref = 'BIO-' + Math.random().toString(36).substr(2,4).toUpperCase() + '-' + Date.now().toString().slice(-5);
+    const refEl = document.getElementById('bio-ref-input');
+    if (refEl) refEl.value = ref;
+
+    bioSetStep(5, 'done');
+    if (scanner)    scanner.className = 'bio-scanner success';
+    if (statusTxt)  { statusTxt.style.color = 'var(--green)'; statusTxt.textContent = 'Scan complete — verify traveler below'; }
+    if (btn)        { btn.disabled = false; btn.textContent = 'Simulate Scan'; }
+    addBioLog('Scan complete. Reference: ' + ref, 'SYSTEM', 'success');
+    bioState.scanning = false;
+    bioState.result = ref;
+  }, 3600);
+}
+
+async function bioLookup() {
+  const docNum = (document.getElementById('bio-doc-input')?.value || '').trim();
+  const ref    = (document.getElementById('bio-ref-input')?.value || '').trim();
+  const type   = document.getElementById('bio-type-select')?.value || 'fingerprint';
+
+  if (!docNum) { toast('error', 'Enter a document number to verify'); return; }
+
+  addBioLog('Lookup initiated for doc: ' + docNum, 'LOOKUP', 'info');
+
+  const resultEl = document.getElementById('bio-result');
+  if (resultEl) resultEl.innerHTML = '<div class="page-loader"><div class="spinner" style="width:22px;height:22px;border-width:2px"></div></div>';
+
+  try {
+    const data = await req('GET', '/travelers?limit=1000');
+    const travelers = data.data || [];
+    const match = travelers.find(function(t) {
+      return t.documentNumber && t.documentNumber.toLowerCase() === docNum.toLowerCase();
+    });
+
+    if (match) {
+      addBioLog('MATCH FOUND: ' + match.name, 'MATCHER', 'success');
+      const bioRef = ref || ('BIO-MANUAL-' + Date.now().toString().slice(-5));
+      resultEl.innerHTML =
+        '<div class="bio-result-card match" style="margin-top:16px">'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+        + '<div style="width:42px;height:42px;border-radius:12px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        + '<svg viewBox="0 0 20 20" fill="var(--green)" width="20" height="20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>'
+        + '</div>'
+        + '<div><div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:15px;color:var(--green)">Identity Verified</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Biometric reference linked successfully</div></div>'
+        + '<div style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:9px;padding:3px 8px;border-radius:6px;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25)">' + type.toUpperCase() + '</div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px;background:rgba(0,0,0,.3);border-radius:10px;margin-bottom:14px">'
+        + '<div><div class="df-label">Full Name</div><div class="df-value">' + match.name + '</div></div>'
+        + '<div><div class="df-label">Nationality</div><div class="df-value">' + match.nationality + '</div></div>'
+        + '<div><div class="df-label">Document #</div><div class="df-value" style="font-family:\'IBM Plex Mono\',monospace">' + match.documentNumber + '</div></div>'
+        + '<div><div class="df-label">Status</div><div class="df-value">' + badge(match.status, true) + '</div></div>'
+        + '<div><div class="df-label">Biometric Ref</div><div class="df-value" style="font-family:\'IBM Plex Mono\',monospace;font-size:11px">' + bioRef + '</div></div>'
+        + '<div><div class="df-label">Scan Type</div><div class="df-value" style="text-transform:capitalize">' + type.replace('_',' ') + '</div></div>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px">'
+        + '<button class="btn btn-primary btn-sm" onclick="go(\'traveler-detail\',{id:\'' + match._id + '\'})">Open Traveler Profile →</button>'
+        + '<button class="btn btn-ghost btn-sm" onclick="resetBio()">New Scan</button>'
+        + '</div></div>';
+    } else {
+      addBioLog('NO MATCH for doc: ' + docNum, 'MATCHER', 'error');
+      resultEl.innerHTML =
+        '<div class="bio-result-card nomatch" style="margin-top:16px">'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+        + '<div style="width:42px;height:42px;border-radius:12px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        + '<svg viewBox="0 0 20 20" fill="var(--red)" width="20" height="20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>'
+        + '</div>'
+        + '<div><div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:15px;color:var(--red)">No Match Found</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Document number not in system — register traveler first</div></div>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px">'
+        + '<button class="btn btn-primary btn-sm" onclick="go(\'new-entry\')">Register New Traveler</button>'
+        + '<button class="btn btn-ghost btn-sm" onclick="resetBio()">Try Again</button>'
+        + '</div></div>';
+      const scanner = document.getElementById('bio-scanner');
+      if (scanner) scanner.className = 'bio-scanner fail';
+    }
+  } catch(e) {
+    addBioLog('Lookup error: ' + e.message, 'ERROR', 'error');
+    if (resultEl) resultEl.innerHTML = '<div style="color:var(--red);padding:16px">' + e.message + '</div>';
+  }
+}
+
+
+// ══ FACE RECOGNITION ══
+let faceState = {
+  modelsLoaded: false, loading: false,
+  probeDescriptor: null, travelers: [], probeImg: null
+};
+
+const FACE_THRESHOLD = 0.50; // Euclidean distance — lower = stricter
+
+function switchBioTab(tab) {
+  const fp   = document.getElementById('bio-tab-fp-content');
+  const face = document.getElementById('bio-tab-face-content');
+  const btnFp   = document.getElementById('bio-tab-fp');
+  const btnFace = document.getElementById('bio-tab-face');
+  if (tab === 'fingerprint') {
+    if (fp)   fp.style.display   = '';
+    if (face) face.style.display = 'none';
+    if (btnFp)   { btnFp.style.background   = 'var(--card)';        btnFp.style.color   = 'var(--text)';  btnFp.style.boxShadow   = '0 1px 4px rgba(0,0,0,.3)'; }
+    if (btnFace) { btnFace.style.background = 'transparent';        btnFace.style.color = 'var(--muted)'; btnFace.style.boxShadow = 'none'; }
+  } else {
+    if (fp)   fp.style.display   = 'none';
+    if (face) face.style.display = '';
+    if (btnFace) { btnFace.style.background = 'var(--card)';       btnFace.style.color = 'var(--text)';  btnFace.style.boxShadow = '0 1px 4px rgba(0,0,0,.3)'; }
+    if (btnFp)   { btnFp.style.background   = 'transparent';       btnFp.style.color   = 'var(--muted)'; btnFp.style.boxShadow   = 'none'; }
+  }
+}
+
+async function initFaceRecognition() {
+  if (faceState.modelsLoaded) { faceLoadTravelers(); return; }
+  if (faceState.loading)      return;
+  faceState.loading = true;
+
+  const statusEl = document.getElementById('face-model-status');
+  const setStatus = function(txt, color) {
+    if (!statusEl) return;
+    statusEl.textContent = txt;
+    statusEl.style.color         = color || 'var(--amber)';
+    statusEl.style.borderColor   = (color || 'var(--amber)').replace('var(--amber)', 'rgba(245,158,11,.2)').replace('var(--green)', 'rgba(16,185,129,.2)').replace('var(--red)', 'rgba(239,68,68,.2)');
+    statusEl.style.background    = (color || 'var(--amber)').replace('var(--amber)', 'rgba(245,158,11,.08)').replace('var(--green)', 'rgba(16,185,129,.08)').replace('var(--red)', 'rgba(239,68,68,.08)');
+  };
+
+  try {
+    if (typeof faceapi === 'undefined') {
+      setStatus('face-api.js not loaded', 'var(--red)');
+      faceState.loading = false;
+      return;
+    }
+    setStatus('Loading models…', 'var(--amber)');
+    const MODEL_URL = '/models';
+    await Promise.all([
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+    ]);
+    faceState.modelsLoaded = true;
+    faceState.loading      = false;
+    setStatus('Models Ready ✓', 'var(--green)');
+    faceLoadTravelers();
+  } catch(e) {
+    faceState.loading = false;
+    setStatus('Model load failed', 'var(--red)');
+    const info = document.getElementById('face-detect-info');
+    if (info) info.innerHTML = '<div style="color:var(--red);padding:12px;font-size:12px">'
+      + '<strong>Could not load face-api models.</strong><br><br>'
+      + 'Place the model files inside:<br>'
+      + '<code style="background:rgba(0,0,0,.4);padding:3px 7px;border-radius:5px;font-size:11px">frontend/public/models/</code><br><br>'
+      + 'Download from:<br>'
+      + '<code style="background:rgba(0,0,0,.4);padding:3px 7px;border-radius:5px;font-size:11px">https://github.com/vladmandic/face-api/tree/master/model</code><br><br>'
+      + 'Files needed:<br>'
+      + '<code style="background:rgba(0,0,0,.4);padding:3px 7px;border-radius:5px;font-size:11px;display:block;margin-top:6px;white-space:pre">ssd_mobilenetv1_model-*\nface_landmark_68_model-*\nface_recognition_model-*</code>'
+      + '</div>';
+  }
+}
+
+async function faceLoadTravelers() {
+  const listEl  = document.getElementById('face-ref-list');
+  const countEl = document.getElementById('face-ref-count');
+  if (!listEl) return;
+  try {
+    const data = await req('GET', '/travelers?limit=1000');
+    faceState.travelers = (data.data || []).filter(function(t) {
+      return t.scannedDocumentData && t.scannedDocumentData.base64Data;
+    });
+    const all = (data.data || []).length;
+    const withPhoto = faceState.travelers.length;
+    if (countEl) countEl.textContent = withPhoto + ' of ' + all + ' travelers have photos';
+
+    if (!withPhoto) {
+      listEl.innerHTML = '<div style="padding:16px;text-align:center;font-size:12px;color:var(--muted)">No travelers with photos yet.<br>Upload photos via New Entry form.</div>';
+      return;
+    }
+
+    listEl.innerHTML = faceState.travelers.map(function(t) {
+      const src = 'data:' + (t.scannedDocumentData.fileType || 'image/jpeg') + ';base64,' + t.scannedDocumentData.base64Data;
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid rgba(37,35,64,.35)">'
+        + '<img src="' + src + '" style="width:36px;height:36px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0" onerror="this.style.display=\'none\'">'
+        + '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">' + t.name + '</div>'
+        + '<div style="font-size:10px;color:var(--muted);font-family:\'IBM Plex Mono\',monospace">' + t.documentNumber + ' · ' + t.nationality + '</div></div>'
+        + '<div>' + badge(t.status, true) + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:var(--red);padding:12px;font-size:12px">' + e.message + '</div>';
+  }
+}
+
+function handleFaceDrop(e) {
+  e.preventDefault();
+  const drop = document.getElementById('face-probe-drop');
+  if (drop) drop.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) handleFaceProbe(file);
+}
+
+function handleFaceProbe(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const src = ev.target.result;
+    faceState.probeImg = src;
+    faceState.probeDescriptor = null;
+
+    const drop = document.getElementById('face-probe-drop');
+    const probeContent = document.getElementById('face-probe-content');
+    if (drop) drop.classList.add('has-img');
+    if (probeContent) probeContent.innerHTML =
+      '<img src="' + src + '" style="max-height:140px;border-radius:8px;object-fit:contain;margin-bottom:6px">'
+      + '<div style="font-size:11px;color:var(--muted)">' + file.name + ' — click to replace</div>';
+
+    detectProbe(src);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function detectProbe(src) {
+  const infoEl   = document.getElementById('face-detect-info');
+  const runBtn   = document.getElementById('face-run-btn');
+  const canvasEl = document.getElementById('face-probe-canvas');
+
+  if (infoEl) infoEl.innerHTML = '<div class="page-loader"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div>';
+  if (runBtn) runBtn.disabled = true;
+
+  if (!faceState.modelsLoaded) {
+    if (infoEl) infoEl.innerHTML = '<div style="color:var(--amber);font-size:12px;padding:12px">Models still loading — please wait…</div>';
+    return;
+  }
+
+  try {
+    const img = await faceapi.fetchImage(src);
+    const detection = await faceapi
+      .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.4 }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    if (!detection) {
+      if (infoEl) infoEl.innerHTML = '<div style="color:var(--amber);padding:12px;font-size:13px">⚠ No face detected.<br><small style="color:var(--muted)">Ensure the photo shows a clear frontal face with good lighting.</small></div>';
+      return;
+    }
+
+    faceState.probeDescriptor = detection.descriptor;
+
+    // Draw detection box on canvas
+    if (canvasEl) {
+      const displayImg = document.createElement('img');
+      displayImg.src = src;
+      displayImg.onload = function() {
+        const maxW = 280;
+        const scale = maxW / displayImg.naturalWidth;
+        const w = maxW;
+        const h = displayImg.naturalHeight * scale;
+        const canvas = faceapi.createCanvasFromMedia(displayImg);
+        canvas.style.cssText = 'border-radius:8px;border:1px solid var(--border);max-width:100%';
+        faceapi.matchDimensions(canvas, { width: w, height: h });
+        const resized = faceapi.resizeResults(detection, { width: w, height: h });
+        faceapi.draw.drawDetections(canvas, resized);
+        faceapi.draw.drawFaceLandmarks(canvas, resized);
+        canvasEl.innerHTML = '';
+        canvasEl.appendChild(canvas);
+      };
+    }
+
+    const box = detection.detection.box;
+    const score = Math.round(detection.detection.score * 100);
+    if (infoEl) infoEl.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      + '<div style="background:rgba(12,10,24,.6);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">'
+      + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:24px;color:var(--green)">' + score + '%</div>'
+      + '<div style="font-size:10px;color:var(--muted);font-family:\'IBM Plex Mono\',monospace">DETECTION CONF.</div></div>'
+      + '<div style="background:rgba(12,10,24,.6);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center">'
+      + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:24px;color:var(--text)">1</div>'
+      + '<div style="font-size:10px;color:var(--muted);font-family:\'IBM Plex Mono\',monospace">FACE DETECTED</div></div>'
+      + '</div>'
+      + '<div style="margin-top:12px;font-size:11px;color:var(--muted);font-family:\'IBM Plex Mono\',monospace">'
+      + 'BBOX: ' + Math.round(box.x) + ',' + Math.round(box.y) + ' · ' + Math.round(box.width) + 'x' + Math.round(box.height) + 'px<br>'
+      + 'DESCRIPTOR: 128-dim vector extracted'
+      + '</div>';
+
+    if (runBtn) runBtn.disabled = false;
+  } catch(e) {
+    if (infoEl) infoEl.innerHTML = '<div style="color:var(--red);font-size:12px;padding:12px">Detection error: ' + e.message + '</div>';
+  }
+}
+
+async function runFaceMatch() {
+  if (!faceState.probeDescriptor) { toast('error', 'Upload and detect a face first'); return; }
+  if (!faceState.travelers.length) { toast('error', 'No travelers with reference photos to match against'); return; }
+
+  const resultEl = document.getElementById('face-result');
+  const runBtn   = document.getElementById('face-run-btn');
+  if (resultEl) resultEl.innerHTML = '<div class="page-loader"><div class="spinner" style="width:22px;height:22px;border-width:2px"></div></div>';
+  if (runBtn)   { runBtn.disabled = true; runBtn.textContent = 'Matching…'; }
+
+  try {
+    // Build labeled descriptors from traveler reference photos
+    const labeledDescriptors = [];
+    for (let i = 0; i < faceState.travelers.length; i++) {
+      const t = faceState.travelers[i];
+      try {
+        const src = 'data:' + (t.scannedDocumentData.fileType || 'image/jpeg') + ';base64,' + t.scannedDocumentData.base64Data;
+        const img = await faceapi.fetchImage(src);
+        const det = await faceapi
+          .detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3 }))
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+        if (det) {
+          labeledDescriptors.push({
+            traveler: t,
+            descriptor: det.descriptor,
+          });
+        }
+      } catch(e) { /* skip traveler if image fails */ }
+    }
+
+    if (!labeledDescriptors.length) {
+      if (resultEl) resultEl.innerHTML = '<div style="color:var(--amber);padding:16px;font-size:13px">⚠ No faces could be detected in reference photos. Ensure traveler photos are clear face images.</div>';
+      if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Run Face Match'; }
+      return;
+    }
+
+    // Find best match using Euclidean distance
+    let bestMatch = null;
+    let bestDist  = Infinity;
+    labeledDescriptors.forEach(function(ld) {
+      const dist = faceapi.euclideanDistance(faceState.probeDescriptor, ld.descriptor);
+      if (dist < bestDist) { bestDist = dist; bestMatch = ld.traveler; }
+    });
+
+    const confidence = Math.max(0, Math.round((1 - bestDist) * 100));
+    const isMatch    = bestDist < FACE_THRESHOLD;
+    const isLow      = bestDist >= FACE_THRESHOLD && bestDist < 0.62;
+
+    let html = '';
+    if (isMatch && bestMatch) {
+      html = '<div class="face-match-card match">'
+        + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+        + '<div style="width:42px;height:42px;border-radius:12px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        + '<svg viewBox="0 0 20 20" fill="var(--green)" width="20" height="20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>'
+        + '</div>'
+        + '<div><div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:15px;color:var(--green)">Face Match Confirmed</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:2px">Identity verified against traveler database</div></div>'
+        + '</div>'
+        + '<div class="face-confidence" style="color:var(--green)">' + confidence + '%</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Match confidence · Distance: ' + bestDist.toFixed(4) + '</div>'
+        + '<div class="face-bar"><div class="face-bar-fill" style="width:' + confidence + '%;background:var(--green)"></div></div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding:12px;background:rgba(0,0,0,.3);border-radius:10px;margin-bottom:14px">'
+        + '<div><div class="df-label">Matched Name</div><div class="df-value">' + bestMatch.name + '</div></div>'
+        + '<div><div class="df-label">Nationality</div><div class="df-value">' + bestMatch.nationality + '</div></div>'
+        + '<div><div class="df-label">Document #</div><div class="df-value" style="font-family:\'IBM Plex Mono\',monospace">' + bestMatch.documentNumber + '</div></div>'
+        + '<div><div class="df-label">Status</div><div class="df-value">' + badge(bestMatch.status, true) + '</div></div>'
+        + '</div>'
+        + '<button class="btn btn-primary btn-sm" onclick="go(\'traveler-detail\',{id:\'' + bestMatch._id + '\'})">Open Traveler Profile →</button>'
+        + '</div>';
+    } else if (isLow && bestMatch) {
+      html = '<div class="face-match-card warn">'
+        + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:15px;color:var(--amber);margin-bottom:6px">⚠ Low Confidence Match</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Possible match found but confidence is below threshold. Manual verification recommended.</div>'
+        + '<div class="face-confidence" style="color:var(--amber)">' + confidence + '%</div>'
+        + '<div class="face-bar"><div class="face-bar-fill" style="width:' + confidence + '%;background:var(--amber)"></div></div>'
+        + '<div style="font-size:12px;color:var(--textdim);margin-top:10px">Closest: <strong>' + bestMatch.name + '</strong> · ' + bestMatch.documentNumber + '</div>'
+        + '</div>';
+    } else {
+      html = '<div class="face-match-card nomatch">'
+        + '<div style="font-family:\'Syne\',sans-serif;font-weight:700;font-size:15px;color:var(--red);margin-bottom:6px">No Match Found</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">This face does not match any registered traveler in the database.</div>'
+        + '<div class="face-confidence" style="color:var(--red)">' + confidence + '%</div>'
+        + '<div class="face-bar"><div class="face-bar-fill" style="width:' + Math.min(confidence,40) + '%;background:var(--red)"></div></div>'
+        + '<div style="display:flex;gap:8px;margin-top:14px">'
+        + '<button class="btn btn-primary btn-sm" onclick="go(\'new-entry\')">Register New Traveler</button>'
+        + '</div></div>';
+    }
+
+    if (resultEl) resultEl.innerHTML = html;
+  } catch(e) {
+    if (resultEl) resultEl.innerHTML = '<div style="color:var(--red);padding:16px;font-size:12px">Match error: ' + e.message + '</div>';
+  } finally {
+    if (runBtn) { runBtn.disabled = false; runBtn.textContent = 'Run Face Match'; }
+  }
+}
+
+// ── Boot ──
+(function boot(){
+  const token=localStorage.getItem('bs_token'),user=localStorage.getItem('bs_user');
+  if(token&&user){currentToken=token;currentUser=JSON.parse(user);initApp();go('dashboard');}
+  else{document.getElementById('login-page').classList.remove('hidden');}
+})();
+</script>
+</body>
+</html>
