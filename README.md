@@ -1,4 +1,4 @@
-# 🛡️ BorderSync — Digital Border Management System
+# 🛡️ BorderSync — Digital Border Management System(In a 12hrs Hackathon btw)
 
 <div align="center">
 
